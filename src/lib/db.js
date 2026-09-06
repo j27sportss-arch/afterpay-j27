@@ -271,7 +271,7 @@ export async function salvarPushSubscription(subscription, empresaId) {
   }, { onConflict: "endpoint" });
 
   
-}if (error) {
+if (error) {
   console.error("ERRO AO SALVAR PUSH NO SUPABASE:", error);
   throw error;
 }
