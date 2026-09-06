@@ -277,7 +277,7 @@ if (error) {
 }
 
 console.log("PUSH SALVO COM SUCESSO");
-
+}
 export async function removerPushSubscription(endpoint) {
   const { error } = await supabase
     .from("push_subscriptions")
