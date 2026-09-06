@@ -270,8 +270,13 @@ export async function salvarPushSubscription(subscription, empresaId) {
     atualizado_em: new Date().toISOString(),
   }, { onConflict: "endpoint" });
 
-  if (error) throw error;
+  
+}if (error) {
+  console.error("ERRO AO SALVAR PUSH NO SUPABASE:", error);
+  throw error;
 }
+
+console.log("PUSH SALVO COM SUCESSO");
 
 export async function removerPushSubscription(endpoint) {
   const { error } = await supabase
