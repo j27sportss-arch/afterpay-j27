@@ -25,12 +25,11 @@ import {
 /* ---------------------------------------------------------------- */
 const GlobalStyle = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap');
-    .fp-app{ font-family:'Manrope',sans-serif; color:#122420; }
-    .fp-mono{ font-family:'IBM Plex Mono',monospace; font-variant-numeric: tabular-nums; }
+    .fp-app{ font-family:Arial,sans-serif; color:#122420; }
+    .fp-mono{ font-family:monospace; font-variant-numeric:tabular-nums; }
     .fp-scrollbar::-webkit-scrollbar{ width:6px; height:6px; }
     .fp-scrollbar::-webkit-scrollbar-thumb{ background:#BFDCD1; border-radius:4px; }
-    input:focus, select:focus, button:focus-visible{ outline: 2px solid #0E7C66; outline-offset: 2px; }
+    input:focus, select:focus, button:focus-visible{ outline:2px solid #0E7C66; outline-offset:2px; }
   `}</style>
 );
 
@@ -51,7 +50,13 @@ const STATUS_STYLES = {
 const STATUS_OPTIONS = ["Em Rota", "Entregue", "Não Pago", "Pago", "Frustrado"];
 const PAGAMENTO_OPTIONS = ["PIX", "Cartão", "Boleto", "Dinheiro", "Pendente"];
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 const fmtBRL = (n) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(n) || 0);
 const fmtDate = (iso) => {
@@ -1185,7 +1190,10 @@ function AdminApp({ profile, onLogout }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSaveDespesa = async (date, values) => upsertDespesa(date, values, profile.empresa_id);
+ const handleSaveDespesa = async (date, values) => {
+  await upsertDespesa(date, values, profile.empresa_id);
+  await reload();
+};
 
   const handleSavePedido = async (values) => {
     if (modal && modal.id) await updatePedido(modal.id, values);
@@ -1380,7 +1388,6 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!isConfigured) return <><GlobalStyle /><SetupNeeded /></>;
 
   if (status === "loading") {
     return (

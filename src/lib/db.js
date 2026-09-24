@@ -24,20 +24,31 @@ export function onAuthStateChange(callback) {
 }
 
 export async function signUpAdmin({ email, password, nomeUsuario, nomeEmpresa }) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        nomeUsuario,
+        nomeEmpresa,
+      },
+    },
+  });
+
   if (error) throw error;
 
-  // A sessão já vem ativa quando a confirmação de e-mail está desligada
   if (!data.session) {
-    throw new Error(
-      "Conta criada! Verifique seu e-mail para confirmar antes de entrar (ou desative a confirmação de e-mail nas configurações do Supabase para testes)."
-    );
+    return {
+      pendingConfirmation: true,
+      user: data.user,
+    };
   }
 
   const { error: rpcError } = await supabase.rpc("criar_empresa_e_admin", {
     nome_empresa: nomeEmpresa,
     nome_usuario: nomeUsuario,
   });
+
   if (rpcError) throw rpcError;
 
   return data.session;
@@ -45,7 +56,7 @@ export async function signUpAdmin({ email, password, nomeUsuario, nomeEmpresa })
 
 export async function signInAdmin({ email, password }) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error("E-mail ou senha incorretos.");
+  if (error) throw error;
   return data.session;
 }
 
@@ -280,7 +291,40 @@ export async function removerPushSubscription(endpoint) {
     .eq("endpoint", endpoint);
   if (error) throw error;
 }
+export async function completarCadastroEmpresa({ nomeEmpresa, nomeUsuario }) {
+  const { data, error } = await supabase.rpc("criar_empresa_e_admin", {
+    nome_empresa: nomeEmpresa,
+    nome_usuario: nomeUsuario,
+  });
 
+  if (error) throw error;
+
+  return data;
+}
+
+export async function tentarCompletarCadastroAutomatico() {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) throw error;
+
+  const user = data.user;
+
+  if (!user) return false;
+
+  const nomeEmpresa = user.user_metadata?.nomeEmpresa;
+  const nomeUsuario = user.user_metadata?.nomeUsuario;
+
+  if (!nomeEmpresa || !nomeUsuario) {
+    return false;
+  }
+
+  await completarCadastroEmpresa({
+    nomeEmpresa,
+    nomeUsuario,
+  });
+
+  return true;
+}
 /* ------------------------------------------------------------ */
 /* Realtime                                                         */
 /* ------------------------------------------------------------ */
