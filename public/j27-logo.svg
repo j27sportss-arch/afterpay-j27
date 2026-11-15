@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="250" viewBox="0 0 760 250">
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#54D9FF"/><stop offset="1" stop-color="#176BFF"/></linearGradient>
+    <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#AFC5E5"/></linearGradient>
+  </defs>
+  <g transform="translate(18 20)">
+    <circle cx="104" cy="104" r="88" fill="#0B1533" stroke="#208BFF" stroke-width="7"/>
+    <circle cx="104" cy="104" r="61" fill="url(#silver)" stroke="#E6F7FF" stroke-width="3"/>
+    <path d="m104 72 22 16-8 26H90l-8-26Z" fill="#102344"/>
+    <path d="m104 43 0 29m56 29-34-3m-78 3 34-3m-25 47 25-25m44 0 25 25" fill="none" stroke="#102344" stroke-width="7" stroke-linecap="round"/>
+    <path d="M13 166 Q95 226 197 153" fill="none" stroke="url(#blue)" stroke-width="11" stroke-linecap="round"/>
+  </g>
+  <text x="235" y="105" font-family="Arial,Helvetica,sans-serif" font-size="74" font-weight="900" letter-spacing="2" fill="#F7FBFF">AFTERPAY</text>
+  <text x="235" y="192" font-family="Arial,Helvetica,sans-serif" font-size="102" font-weight="900" letter-spacing="-4" fill="url(#blue)">J27</text>
+  <text x="440" y="184" font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="800" letter-spacing="5" fill="#D7E7FF">OPERATIONS HUB</text>
+  <path d="M440 204h285" stroke="url(#blue)" stroke-width="5" stroke-linecap="round"/>
+</svg>

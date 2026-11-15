@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#14264B"/><stop offset="1" stop-color="#071126"/></linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#43D5FF"/><stop offset="1" stop-color="#176BFF"/></linearGradient>
+    <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#AFC5E5"/></linearGradient>
+  </defs>
+  <rect x="4" y="4" width="184" height="184" rx="42" fill="url(#bg)" stroke="#238DFF" stroke-width="5"/>
+  <circle cx="96" cy="52" r="29" fill="url(#silver)" stroke="#D9F4FF" stroke-width="2"/>
+  <path d="M96 36 108 45 104 59 88 59 84 45Z" fill="#102344"/>
+  <path d="M96 23v13m27 7-15 2m-39-2 15 2m-10 30 14-14m36 14-14-14" fill="none" stroke="#102344" stroke-width="4" stroke-linecap="round"/>
+  <path d="M21 143 Q83 177 171 134" fill="none" stroke="url(#blue)" stroke-width="7" stroke-linecap="round"/>
+  <text x="96" y="132" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="76" font-weight="900" letter-spacing="-5"><tspan fill="#F7FBFF">J</tspan><tspan fill="url(#blue)">27</tspan></text>
+</svg>
