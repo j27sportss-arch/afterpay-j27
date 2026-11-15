@@ -9,6 +9,7 @@ import webpush from "npm:web-push@3.6.7";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-secret",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 type NotificationRecord = {
@@ -33,9 +34,16 @@ Deno.serve(async (req) => {
 
   try {
     const webhookSecret = Deno.env.get("PUSH_WEBHOOK_SECRET");
-    if (webhookSecret) {
-      const received = req.headers.get("x-webhook-secret");
-      if (received !== webhookSecret) return json({ error: "Não autorizado." }, 401);
+    // A função é publicada com --no-verify-jwt porque recebe Database Webhooks.
+    // Portanto, o segredo compartilhado é obrigatório e a ausência dele deve
+    // falhar fechada em vez de deixar o endpoint sem autenticação.
+    if (!webhookSecret) {
+      console.error("PUSH_WEBHOOK_SECRET não configurado.");
+      return json({ error: "Webhook não configurado no servidor." }, 503);
+    }
+    const received = req.headers.get("x-webhook-secret");
+    if (!received || received !== webhookSecret) {
+      return json({ error: "Não autorizado." }, 401);
     }
 
     const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");

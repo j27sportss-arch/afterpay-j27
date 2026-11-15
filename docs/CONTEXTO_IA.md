@@ -1,5 +1,7 @@
 # Afterpay J27 — Contexto Oficial para IA
 
+> **Nota de atualização — 15/11/2026:** este documento contém histórico de auditoria de 21/09/2026. Para o estado vigente do ZIP atualizado, consulte [`ATUALIZACAO_2026-11-15.md`](ATUALIZACAO_2026-11-15.md), que prevalece em caso de divergência.
+
 **Versão:** auditoria Fase 0  
 **Data da auditoria:** 2026-09-21  
 **Escopo:** auditoria estática do repositório entregue no arquivo `afterpay-j27-main (1).zip`.

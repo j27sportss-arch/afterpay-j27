@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard, ShoppingCart, Users, Plus, X, Search,
-  Pencil, Trash2, LogOut, ChevronLeft, TrendingUp, DollarSign,
+  Pencil, Trash2, LogOut, ChevronLeft, TrendingUp,
   CheckCircle2, Clock, UserPlus, ChevronDown, Package, KeyRound,
-  Megaphone, Percent, Target, Receipt, Bell, BellOff, Building2, AlertTriangle,
+  Receipt, Bell, BellOff, Building2, AlertTriangle,
+  Boxes, Wallet, Store, BarChart3, ChevronRight, TrendingDown, CircleDollarSign,
 } from "lucide-react";
 import {
   isConfigured, getSession, onAuthStateChange, fetchMyProfile,
@@ -13,6 +14,7 @@ import {
   signUpAdmin, signInAdmin, signInAffiliate, signOut,
   fetchEmpresasPublicList, fetchAffiliateLoginList,
   fetchPedidos, createPedido, updatePedido, deletePedido,
+  fetchProdutos, createProduto, updateProduto, deleteProduto,
   fetchAfiliados, createAfiliadoComLogin, desativarAfiliado,
   fetchDespesas, upsertDespesa,
   fetchNotificacoes, marcarNotificacaoLida,
@@ -25,23 +27,50 @@ import {
 /* ---------------------------------------------------------------- */
 const GlobalStyle = () => (
   <style>{`
-    .fp-app{ font-family:Arial,sans-serif; color:#122420; }
+    .fp-app{ font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#111827; -webkit-font-smoothing:antialiased; }
     .fp-mono{ font-family:monospace; font-variant-numeric:tabular-nums; }
     .fp-scrollbar::-webkit-scrollbar{ width:6px; height:6px; }
-    .fp-scrollbar::-webkit-scrollbar-thumb{ background:#BFDCD1; border-radius:4px; }
-    input:focus, select:focus, button:focus-visible{ outline:2px solid #0E7C66; outline-offset:2px; }
+    .fp-scrollbar::-webkit-scrollbar-thumb{ background:#CBD3E2; border-radius:8px; }
+    input:focus, select:focus, textarea:focus, button:focus-visible{ outline:2px solid #5875FF; outline-offset:2px; }
+    .admin-shell{ min-height:100vh; background:#F5F7FB; }
+    .admin-sidebar{ position:fixed; inset:0 auto 0 0; width:252px; z-index:30; background:#0B1533; color:#E8ECF8; padding:26px 18px 18px; display:flex; flex-direction:column; }
+    .brand-lockup{ display:flex; align-items:center; gap:12px; padding:0 10px 30px; }
+    .brand-mark{ width:42px; height:42px; border-radius:14px; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg,#5875FF,#8064FF); box-shadow:0 8px 24px rgba(88,117,255,.3); }
+    .sidebar-kicker{ color:#7F8BAA; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; padding:0 12px; margin:8px 0 10px; }
+    .sidebar-link{ width:100%; display:flex; align-items:center; gap:12px; padding:12px 13px; border-radius:12px; color:#AEB8D0; font-size:13px; font-weight:650; text-align:left; transition:background .18s,color .18s; }
+    .sidebar-link:hover{ background:rgba(255,255,255,.06); color:#fff; }
+    .sidebar-link.active{ color:#fff; background:linear-gradient(100deg,rgba(88,117,255,.28),rgba(128,100,255,.16)); box-shadow:inset 3px 0 #7890FF; }
+    .sidebar-bottom{ margin-top:auto; border-top:1px solid rgba(255,255,255,.09); padding:18px 8px 0; }
+    .admin-main{ min-height:100vh; margin-left:252px; min-width:0; }
+    .admin-topbar{ min-height:86px; padding:16px 34px; display:flex; align-items:center; justify-content:space-between; gap:16px; background:rgba(255,255,255,.92); border-bottom:1px solid #E7EBF3; position:sticky; top:0; z-index:20; backdrop-filter:blur(14px); }
+    .admin-content{ max-width:1560px; margin:0 auto; padding:28px 34px 48px; }
+    .admin-page{ min-width:0; }
+    .admin-page h2{ color:#111B33; letter-spacing:-.035em; }
+    .admin-page h3{ color:#17213A; letter-spacing:-.02em; }
+    .admin-card{ background:#fff; border:1px solid #E6EAF2; border-radius:18px; box-shadow:0 5px 18px rgba(18,31,66,.035); }
+    .mobile-nav{ display:none; }
+    .metric-card{ background:#fff; border:1px solid #E6EAF2; border-radius:17px; padding:17px; box-shadow:0 4px 14px rgba(18,31,66,.025); }
+    .chart-bar{ min-height:5px; border-radius:8px 8px 3px 3px; background:linear-gradient(180deg,#7B8EFF,#4E6BFF); }
+    .page-eyebrow{ color:#7C87A0; font-size:10px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+    .primary-button{ display:inline-flex; align-items:center; justify-content:center; gap:8px; background:#4F6BFF; color:#fff; border-radius:11px; padding:10px 15px; font-size:12px; font-weight:750; box-shadow:0 7px 16px rgba(79,107,255,.18); transition:transform .18s,background .18s; }
+    .primary-button:hover{ background:#405DEB; transform:translateY(-1px); }
+    .secondary-button{ display:inline-flex; align-items:center; justify-content:center; gap:8px; border:1px solid #E2E7F0; background:#fff; color:#34405A; border-radius:11px; padding:10px 14px; font-size:12px; font-weight:700; }
+    .product-image{ width:58px; height:58px; flex:none; overflow:hidden; border-radius:13px; background:#F0F3FA; display:grid; place-items:center; color:#7A86A0; }
+    .product-image img{ width:100%; height:100%; object-fit:cover; }
+    @media(max-width:1023px){ .admin-main{ margin-left:0; } .admin-sidebar{ display:none; } .admin-topbar{ min-height:72px; padding:12px 18px; } .admin-content{ padding:20px 18px 100px; } .mobile-nav{ display:flex; position:fixed; z-index:40; bottom:0; left:0; right:0; padding:9px 5px calc(9px + env(safe-area-inset-bottom)); background:rgba(255,255,255,.96); border-top:1px solid #E6EAF2; box-shadow:0 -8px 28px rgba(18,31,66,.07); justify-content:space-around; backdrop-filter:blur(16px); } }
+    @media(max-width:520px){ .admin-topbar{ padding:11px 14px; } .admin-content{ padding:16px 12px 100px; } .mobile-nav button{ min-width:0; padding:5px 7px; } .mobile-nav span{ font-size:9px; } }
   `}</style>
 );
 
 const COLORS = {
-  ink: "#122420", paper: "#F2F7F4", brand: "#0E7C66", brandDeep: "#0A4F42",
-  pos: "#15A671", posBg: "#E1F6EC", pending: "#D98A2B", pendingBg: "#FCF0DC",
-  neg: "#E1496A", negBg: "#FDE9EF", gold: "#E8B84B", line: "#DCE7E1", sub: "#5C716B",
-  frustrado: "#B23A21", frustradoBg: "#F7E1D9",
+  ink: "#111B33", paper: "#F5F7FB", brand: "#4F6BFF", brandDeep: "#0B1533",
+  pos: "#15966A", posBg: "#E8F7F0", pending: "#C98222", pendingBg: "#FFF5E5",
+  neg: "#D94D67", negBg: "#FFF0F3", gold: "#8A70F8", line: "#E6EAF2", sub: "#68738A",
+  frustrado: "#B64B3C", frustradoBg: "#FFF0EC", violet: "#8064FF", surface: "#FFFFFF",
 };
 
 const STATUS_STYLES = {
-  "Em Rota": { bg: "#E1F0EC", color: COLORS.brand },
+  "Em Rota": { bg: "#EEF1FF", color: COLORS.brand },
   "Entregue": { bg: "#E7EEFB", color: "#3B5FA6" },
   "Não Pago": { bg: COLORS.negBg, color: COLORS.neg },
   "Pago": { bg: COLORS.posBg, color: COLORS.pos },
@@ -70,7 +99,8 @@ function computeMetrics(list) {
   const m = {
     faturamento: 0, pagos: 0, lucro: 0, vendas: 0, pendentes: 0,
     emRota: 0, entregues: 0, naoPagos: 0, pagosCount: 0,
-    frustradosCount: 0, prejuizoFrustrados: 0, vendaPerdidaFrustrados: 0,
+    pendentesCount: 0, frustradosCount: 0, prejuizoFrustrados: 0,
+    vendaPerdidaFrustrados: 0,
   };
   list.forEach((p) => {
     const venda = Number(p.venda) || 0;
@@ -85,7 +115,7 @@ function computeMetrics(list) {
     m.faturamento += venda;
     m.lucro += venda - custo;
     if (p.status === "Pago") { m.pagos += venda; m.pagosCount += 1; }
-    else m.pendentes += venda;
+    else { m.pendentes += venda; m.pendentesCount += 1; }
     if (p.status === "Em Rota") m.emRota += 1;
     if (p.status === "Entregue" || p.status === "Pago") m.entregues += 1;
     if (p.status === "Não Pago") m.naoPagos += 1;
@@ -97,16 +127,8 @@ const getDespesaDia = (despesas, date) => {
   const d = despesas[date] || {};
   return { trafego: Number(d.trafego) || 0, outras: Number(d.outras) || 0 };
 };
-const totalDespesaDia = (despesas, date) => {
-  const d = getDespesaDia(despesas, date);
-  return d.trafego + d.outras;
-};
-const sumDespesasTotal = (despesas) =>
-  Object.values(despesas).reduce((a, d) => a + (Number(d.trafego) || 0) + (Number(d.outras) || 0), 0);
-const sumTrafegoTotal = (despesas) =>
-  Object.values(despesas).reduce((a, d) => a + (Number(d.trafego) || 0), 0);
 
-const inputStyle = { border: `1.5px solid ${COLORS.line}`, background: "#FAFAFD" };
+const inputStyle = { border: `1px solid ${COLORS.line}`, background: "#FFFFFF", color: COLORS.ink };
 const FieldLabel = ({ children }) => (
   <label className="text-xs font-semibold block mb-1.5" style={{ color: COLORS.sub }}>{children}</label>
 );
@@ -232,7 +254,7 @@ function AuthGate() {
         {mode === "choose" && (
           <div className="space-y-3">
             <button onClick={() => setMode("admin_login")} className="w-full bg-white rounded-2xl p-5 text-left flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "#E1F0EC" }}>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "#EEF1FF" }}>
                 <LayoutDashboard size={20} color={COLORS.brand} />
               </div>
               <div>
@@ -241,7 +263,7 @@ function AuthGate() {
               </div>
             </button>
             <button onClick={() => setMode("admin_signup")} className="w-full bg-white rounded-2xl p-5 text-left flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "#E1F0EC" }}>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "#EEF1FF" }}>
                 <Building2 size={20} color={COLORS.brand} />
               </div>
               <div>
@@ -250,7 +272,7 @@ function AuthGate() {
               </div>
             </button>
             <button onClick={() => setMode("aff_company")} className="w-full bg-white rounded-2xl p-5 text-left flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "#E1F0EC" }}>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "#EEF1FF" }}>
                 <Users size={20} color={COLORS.brand} />
               </div>
               <div>
@@ -605,8 +627,8 @@ function NotificationBell({ empresaId }) {
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen((v) => !v)} className="p-2 rounded-lg relative" style={{ background: "rgba(255,255,255,0.15)" }}>
-        {unread > 0 ? <Bell size={16} color="#fff" /> : <BellOff size={16} color="#fff" />}
+      <button onClick={() => setOpen((v) => !v)} className="p-2 rounded-lg relative" style={{ background: "#E9EDF6", color: COLORS.brand }} aria-label="Abrir notificações">
+        {unread > 0 ? <Bell size={17} color={COLORS.brand} /> : <BellOff size={17} color={COLORS.sub} />}
         {unread > 0 && (
           <span className="absolute -top-1 -right-1 text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center text-white" style={{ background: COLORS.neg }}>
             {unread > 9 ? "9+" : unread}
@@ -621,7 +643,7 @@ function NotificationBell({ empresaId }) {
           </div>
 
           {pushState === "available" && (
-            <div className="px-4 py-3" style={{ background: "#F2F7F4", borderBottom: `1px solid ${COLORS.line}` }}>
+            <div className="px-4 py-3" style={{ background: "#F5F7FB", borderBottom: `1px solid ${COLORS.line}` }}>
               <p className="text-xs font-semibold" style={{ color: COLORS.ink }}>Receba alertas no celular</p>
               <p className="text-[11px] mt-1" style={{ color: COLORS.sub }}>Ative as notificações push para receber avisos mesmo fora do app.</p>
               <button
@@ -649,12 +671,17 @@ function NotificationBell({ empresaId }) {
               Este navegador/dispositivo não oferece Web Push neste contexto.
             </div>
           )}
+          {pushState === "error" && (
+            <div className="px-4 py-2 text-[11px]" style={{ color: COLORS.neg, borderBottom: `1px solid ${COLORS.line}` }}>
+              Não foi possível ativar o Push. Confira a chave VAPID pública e as configurações do Supabase.
+            </div>
+          )}
 
           {items.length === 0 ? (
             <p className="text-xs text-center py-8" style={{ color: COLORS.sub }}>Nenhuma notificação ainda.</p>
           ) : (
             items.map((n) => (
-              <div key={n.id} className="px-4 py-3" style={{ borderBottom: `1px solid ${COLORS.line}`, background: n.lida ? "#fff" : "#F2F7F4" }}>
+              <div key={n.id} className="px-4 py-3" style={{ borderBottom: `1px solid ${COLORS.line}`, background: n.lida ? "#fff" : "#F5F7FB" }}>
                 <p className="text-xs font-bold" style={{ color: COLORS.ink }}>{n.titulo}</p>
                 <p className="text-[11px] mt-0.5" style={{ color: COLORS.sub }}>{n.mensagem}</p>
               </div>
@@ -669,18 +696,37 @@ function NotificationBell({ empresaId }) {
 /* ---------------------------------------------------------------- */
 /* Modal de pedido                                                    */
 /* ---------------------------------------------------------------- */
-function PedidoFormModal({ title, initial, afiliados, showAfiliadoField, onCancel, onSave }) {
+function PedidoFormModal({ title, initial, afiliados, products = [], showAfiliadoField, onCancel, onSave }) {
   const [form, setForm] = useState(
     initial || {
       cliente: "", dataPedido: todayISO(), previsaoEntrega: todayISO(),
       custo: "", venda: "", status: "Em Rota", formaPagamento: "PIX",
-      dataPagamento: "", afiliadoId: "",
+      dataPagamento: "", afiliadoId: "", produtoId: "", produtoNome: "", produtoAlterado: false,
     }
   );
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const lucro = (Number(form.venda) || 0) - (Number(form.custo) || 0);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e && e.target ? e.target.value : e }));
+  const produtosDisponiveis = (products || []).filter((p) => p.ativo || p.id === form.produtoId);
+  const produtoSelecionado = produtosDisponiveis.find((p) => p.id === form.produtoId);
+
+  const selecionarProduto = (produtoId) => {
+    if (!produtoId) {
+      setForm((f) => ({ ...f, produtoId: "", produtoNome: "", produtoAlterado: true }));
+      return;
+    }
+    const produto = products.find((p) => p.id === produtoId);
+    if (!produto) return;
+    setForm((f) => ({
+      ...f,
+      produtoId: produto.id,
+      produtoNome: produto.nome,
+      produtoAlterado: true,
+      custo: String(produto.custo),
+      venda: String(produto.precoVenda),
+    }));
+  };
 
   const handleSave = async () => {
     if (!form.cliente.trim()) return setError("Informe o nome do cliente.");
@@ -716,12 +762,41 @@ function PedidoFormModal({ title, initial, afiliados, showAfiliadoField, onCance
               <input type="date" className="w-full rounded-xl px-3 py-2.5 text-sm" style={inputStyle} value={form.previsaoEntrega} onChange={set("previsaoEntrega")} />
             </div>
           </div>
+          <div>
+            <FieldLabel>Produto cadastrado (opcional)</FieldLabel>
+            <select
+              className="w-full rounded-xl px-3 py-2.5 text-sm"
+              style={inputStyle}
+              value={form.produtoId || ""}
+              onChange={(e) => selecionarProduto(e.target.value)}
+            >
+              <option value="">Cadastro manual / sem produto</option>
+              {form.produtoId && !produtoSelecionado && form.produtoNome && (
+                <option value={form.produtoId}>{form.produtoNome} · produto indisponível</option>
+              )}
+              {produtosDisponiveis.map((produto) => (
+                <option key={produto.id} value={produto.id}>
+                  {produto.nome}{produto.ativo ? "" : " · inativo"}
+                </option>
+              ))}
+            </select>
+            {produtoSelecionado && (
+              <p className="text-[11px] mt-1.5" style={{ color: COLORS.sub }}>
+                Valores copiados do cadastro. Você ainda pode ajustar custo e preço neste pedido.
+              </p>
+            )}
+            {!produtoSelecionado && form.produtoNome && !form.produtoId && (
+              <p className="text-[11px] mt-1.5" style={{ color: COLORS.sub }}>
+                Produto histórico: {form.produtoNome}. Os valores abaixo são os registrados no pedido.
+              </p>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div><FieldLabel>Custo do produto (R$)</FieldLabel>
-              <input type="number" inputMode="decimal" className="w-full rounded-xl px-3.5 py-2.5 text-sm fp-mono" style={inputStyle} value={form.custo} onChange={set("custo")} />
+              <input type="number" min="0" step="0.01" inputMode="decimal" className="w-full rounded-xl px-3.5 py-2.5 text-sm fp-mono" style={inputStyle} value={form.custo} onChange={set("custo")} />
             </div>
             <div><FieldLabel>Valor da venda (R$)</FieldLabel>
-              <input type="number" inputMode="decimal" className="w-full rounded-xl px-3.5 py-2.5 text-sm fp-mono" style={inputStyle} value={form.venda} onChange={set("venda")} />
+              <input type="number" min="0" step="0.01" inputMode="decimal" className="w-full rounded-xl px-3.5 py-2.5 text-sm fp-mono" style={inputStyle} value={form.venda} onChange={set("venda")} />
             </div>
           </div>
           <div className="rounded-xl px-3.5 py-2.5 flex items-center justify-between" style={{ background: COLORS.posBg }}>
@@ -772,110 +847,158 @@ function PedidoFormModal({ title, initial, afiliados, showAfiliadoField, onCance
 /* Dashboard                                                          */
 /* ---------------------------------------------------------------- */
 function DashboardTab({ pedidos, afiliados, despesas, onSaveDespesa, onNovo }) {
-  const [view, setView] = useState("hoje");
-  const [customDate, setCustomDate] = useState(todayISO());
   const today = todayISO();
-  const activeDate = view === "hoje" ? today : view === "data" ? customDate : null;
-  const filtered = activeDate ? pedidos.filter((p) => p.dataPedido === activeDate) : pedidos;
-  const m = computeMetrics(filtered);
-
-  const despesaPeriodo = activeDate ? totalDespesaDia(despesas, activeDate) : sumDespesasTotal(despesas);
-  const trafegoPeriodo = activeDate ? getDespesaDia(despesas, activeDate).trafego : sumTrafegoTotal(despesas);
-  const custoProdutos = m.faturamento - m.lucro;
-  const lucroReal = m.lucro - despesaPeriodo;
-  const margemReal = m.faturamento > 0 ? (lucroReal / m.faturamento) * 100 : 0;
-  const roas = trafegoPeriodo > 0 ? m.faturamento / trafegoPeriodo : null;
-  const ticketMedio = m.vendas > 0 ? m.faturamento / m.vendas : 0;
-  const periodoLabel = view === "hoje" ? "hoje" : view === "total" ? "no total geral" : `em ${fmtDate(customDate)}`;
+  const [view, setView] = useState("hoje");
+  const [customStart, setCustomStart] = useState(today);
+  const [customEnd, setCustomEnd] = useState(today);
+  const sevenDaysAgo = () => {
+    const date = new Date();
+    date.setDate(date.getDate() - 6);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  };
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const range = view === "hoje" ? [today, today]
+    : view === "7dias" ? [sevenDaysAgo(), today]
+      : view === "mes" ? [monthStart, today]
+        : view === "personalizado" ? [customStart, customEnd]
+          : [null, null];
+  const [startDate, endDate] = range;
+  const inRange = (date) => !startDate || !endDate || (date >= startDate && date <= endDate);
+  const filtered = pedidos.filter((pedido) => inRange(pedido.dataPedido));
+  const expenseRows = Object.entries(despesas).filter(([date]) => inRange(date));
+  const despesaTrafego = expenseRows.reduce((sum, [, value]) => sum + (Number(value.trafego) || 0), 0);
+  const despesaOutras = expenseRows.reduce((sum, [, value]) => sum + (Number(value.outras) || 0), 0);
+  const despesaTotal = despesaTrafego + despesaOutras;
+  const metrics = computeMetrics(filtered);
+  const custoProdutos = metrics.faturamento - metrics.lucro;
+  const resultadoRegistrado = metrics.lucro - despesaTotal;
+  const roas = despesaTrafego > 0 ? metrics.faturamento / despesaTrafego : null;
+  const ticketMedio = metrics.vendas > 0 ? metrics.faturamento / metrics.vendas : 0;
+  const periodoLabel = view === "hoje" ? "hoje" : view === "7dias" ? "nos últimos 7 dias" : view === "mes" ? "neste mês" : view === "total" ? "no período total" : `${fmtDate(customStart)} a ${fmtDate(customEnd)}`;
+  const chartDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - index));
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const dayOrders = pedidos.filter((pedido) => pedido.dataPedido === iso && pedido.status !== "Frustrado");
+    return {
+      date: iso,
+      label: date.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+      value: dayOrders.reduce((sum, pedido) => sum + (Number(pedido.venda) || 0), 0),
+      paid: dayOrders.filter((pedido) => pedido.status === "Pago").reduce((sum, pedido) => sum + (Number(pedido.venda) || 0), 0),
+    };
+  });
+  const chartMax = Math.max(1, ...chartDays.map((day) => day.value));
 
   return (
     <div className="px-4 pt-5 pb-6 space-y-5">
-      <div>
-        <h2 className="text-xl font-extrabold">Visão geral do negócio</h2>
-        <p className="text-sm" style={{ color: COLORS.sub }}>Desempenho financeiro completo da operação</p>
-      </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex rounded-xl p-1" style={{ background: "#DDEDE6" }}>
-          {["hoje", "total", "data"].map((v) => (
-            <button key={v} onClick={() => setView(v)} className="px-3.5 py-1.5 rounded-lg text-xs font-bold"
-              style={view === v ? { background: "#fff", color: COLORS.brand } : { color: COLORS.sub }}>
-              {v === "hoje" ? "Hoje" : v === "total" ? "Total geral" : "Escolher data"}
-            </button>
-          ))}
-        </div>
-        <button onClick={onNovo} className="ml-auto flex items-center gap-1.5 text-white text-xs font-bold px-4 py-2.5 rounded-xl" style={{ background: COLORS.brand }}>
-          <Plus size={15} /> Novo pedido
-        </button>
-      </div>
-      {view === "data" && (
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <FieldLabel>Ver resultado do dia</FieldLabel>
-          <input type="date" className="w-full rounded-xl px-3.5 py-2.5 text-sm" style={inputStyle} value={customDate} onChange={(e) => setCustomDate(e.target.value)} />
+          <p className="page-eyebrow">Painel de desempenho</p>
+          <h2 className="text-2xl font-extrabold mt-1">Visão geral</h2>
+          <p className="text-sm mt-1" style={{ color: COLORS.sub }}>Acompanhe vendas, recebimentos e despesas da operação.</p>
         </div>
-      )}
-      <div className="rounded-2xl p-5 text-white" style={{ background: `linear-gradient(135deg, ${COLORS.brandDeep}, ${COLORS.brand})` }}>
-        <p className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>
-          {view === "total" ? "Lucro real total" : `Lucro real ${periodoLabel}`}
-        </p>
-        <p className="fp-mono text-3xl font-extrabold mt-1">{fmtBRL(lucroReal)}</p>
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
-          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1" style={{ background: "rgba(255,255,255,0.18)" }}>
-            <Percent size={11} /> Margem {margemReal.toFixed(1)}%
-          </span>
-          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1" style={{ background: "rgba(255,255,255,0.18)" }}>
-            <Target size={11} /> ROAS {roas !== null ? `${roas.toFixed(2)}x` : "—"}
-          </span>
-        </div>
-        <p className="text-[11px] mt-3" style={{ color: "rgba(255,255,255,0.65)" }}>
-          Faturamento {fmtBRL(m.faturamento)} − Custo {fmtBRL(custoProdutos)} − Tráfego {fmtBRL(despesaPeriodo)}
-        </p>
+        <button onClick={onNovo} className="primary-button"><Plus size={15} /> Novo pedido</button>
       </div>
-      {onSaveDespesa && <DespesaWidget despesas={despesas} onSave={onSaveDespesa} />}
-      <div className="grid grid-cols-2 gap-3">
-        <MiniStat label={view === "total" ? "Faturamento total" : `Faturamento ${periodoLabel}`} value={fmtBRL(m.faturamento)} icon={DollarSign} />
-        <MiniStat label="Custo de produtos" value={fmtBRL(custoProdutos)} icon={Package} tone="neg" />
-        <MiniStat label="Gasto com tráfego" value={fmtBRL(trafegoPeriodo)} icon={Megaphone} tone="pending" />
-        <MiniStat label="Lucro bruto (sem despesas)" value={fmtBRL(m.lucro)} icon={TrendingUp} />
-        <MiniStat label="Ticket médio" value={fmtBRL(ticketMedio)} icon={Receipt} />
-        <MiniStat label="ROAS" value={roas !== null ? `${roas.toFixed(2)}x` : "—"} icon={Target} tone="pos" />
-        <MiniStat label={view === "total" ? "Total de vendas" : `Vendas ${periodoLabel}`} value={String(m.vendas)} icon={ShoppingCart} />
-        <MiniStat label="Pendentes de pagamento" value={fmtBRL(m.pendentes)} icon={Clock} tone="pending" />
-      </div>
-      <div>
-        <h3 className="font-bold text-sm mb-3">Resumo rápido de status ({view === "total" ? "total geral" : periodoLabel})</h3>
-        <div className="grid grid-cols-2 gap-3">
+
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="flex rounded-xl p-1 overflow-x-auto" style={{ background: "#E9EDF6" }}>
           {[
-            { label: "Em rota", value: m.emRota, tone: "brand" },
-            { label: "Entregues", value: m.entregues, tone: "ink" },
-            { label: "Não pagos", value: m.naoPagos, tone: "neg" },
-            { label: "Pagos", value: m.pagosCount, tone: "pos" },
-          ].map((s) => (
-            <div key={s.label} className="rounded-2xl py-4 text-center bg-white" style={{ border: `1px solid ${COLORS.line}` }}>
-              <p className="text-xs font-medium mb-1" style={{ color: COLORS.sub }}>{s.label}</p>
-              <p className="fp-mono text-xl font-bold" style={{ color: s.tone === "brand" ? COLORS.brand : s.tone === "neg" ? COLORS.neg : s.tone === "pos" ? COLORS.pos : COLORS.ink }}>{s.value}</p>
-            </div>
+            ["hoje", "Hoje"], ["7dias", "7 dias"], ["mes", "Este mês"], ["total", "Todo período"], ["personalizado", "Personalizado"],
+          ].map(([id, label]) => (
+            <button key={id} onClick={() => setView(id)} className="px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap" style={view === id ? { background: "#fff", color: COLORS.brand, boxShadow: "0 1px 4px rgba(20,30,60,.08)" } : { color: COLORS.sub }}>{label}</button>
           ))}
         </div>
+        {view === "personalizado" && (
+          <div className="flex items-center gap-2">
+            <div><FieldLabel>De</FieldLabel><input type="date" className="rounded-xl px-3 py-2.5 text-xs" style={inputStyle} value={customStart} max={customEnd} onChange={(event) => setCustomStart(event.target.value)} /></div>
+            <div><FieldLabel>Até</FieldLabel><input type="date" className="rounded-xl px-3 py-2.5 text-xs" style={inputStyle} value={customEnd} min={customStart} onChange={(event) => setCustomEnd(event.target.value)} /></div>
+          </div>
+        )}
       </div>
-      {afiliados.length > 0 && (
-        <div>
-          <h3 className="font-bold text-sm mb-3">Vendas por afiliado {view === "hoje" ? "hoje" : ""}</h3>
-          <div className="space-y-2">
-            {afiliados.map((a) => {
-              const aList = pedidos.filter((p) => p.afiliadoId === a.id && (activeDate ? p.dataPedido === activeDate : true));
-              const am = computeMetrics(aList);
-              return (
-                <div key={a.id} className="bg-white rounded-2xl px-4 py-3 flex items-center justify-between" style={{ border: `1px solid ${COLORS.line}` }}>
-                  <div>
-                    <p className="font-semibold text-sm">{a.nome}</p>
-                    <p className="text-[11px]" style={{ color: COLORS.sub }}>{am.vendas} venda{am.vendas !== 1 ? "s" : ""}</p>
-                  </div>
-                  <p className="fp-mono text-sm font-bold" style={{ color: COLORS.pos }}>{fmtBRL(am.faturamento)}</p>
+
+      <section className="rounded-2xl p-5 sm:p-6 text-white overflow-hidden relative" style={{ background: "linear-gradient(120deg,#0B1533 0%,#172B63 62%,#4F6BFF 140%)", boxShadow: "0 14px 30px rgba(20,37,90,.14)" }}>
+        <div className="absolute -right-12 -top-16 w-56 h-56 rounded-full" style={{ background: "rgba(128,100,255,.18)", filter: "blur(2px)" }} />
+        <div className="relative">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-semibold" style={{ color: "#B8C5ED" }}>Resultado após despesas registradas · estimativa</p>
+            <span className="text-[9px] font-extrabold tracking-wider px-2 py-1 rounded-full" style={{ background: "rgba(255,255,255,.12)", color: "#DCE4FF" }}>NÃO É LUCRO LÍQUIDO</span>
+          </div>
+          <p className="fp-mono text-3xl sm:text-4xl font-extrabold mt-2">{fmtBRL(resultadoRegistrado)}</p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 text-[11px]" style={{ color: "#C7D1EE" }}>
+            <span>Lucro bruto previsto <strong className="text-white">{fmtBRL(metrics.lucro)}</strong></span>
+            <span>Despesas registradas <strong className="text-white">{fmtBRL(despesaTotal)}</strong></span>
+            <span>ROAS previsto <strong className="text-white">{roas === null ? "—" : `${roas.toFixed(2)}x`}</strong></span>
+          </div>
+          <p className="text-[10px] mt-4 max-w-3xl" style={{ color: "#AAB8DE" }}>Estimativa calculada a partir dos custos dos pedidos e das despesas cadastradas. Não inclui taxas de pagamento, impostos, frete ou outros custos não registrados.</p>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
+        <div className="metric-card"><div className="flex items-center justify-between"><p className="text-[11px] font-semibold" style={{ color: COLORS.sub }}>Faturamento previsto</p><CircleDollarSign size={17} color={COLORS.brand} /></div><p className="fp-mono text-xl font-extrabold mt-2">{fmtBRL(metrics.faturamento)}</p><p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>Pedidos não frustrados</p></div>
+        <div className="metric-card"><div className="flex items-center justify-between"><p className="text-[11px] font-semibold" style={{ color: COLORS.sub }}>Faturamento recebido</p><CheckCircle2 size={17} color={COLORS.pos} /></div><p className="fp-mono text-xl font-extrabold mt-2" style={{ color: COLORS.pos }}>{fmtBRL(metrics.pagos)}</p><p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>{metrics.pagosCount} pedidos pagos</p></div>
+        <div className="metric-card"><div className="flex items-center justify-between"><p className="text-[11px] font-semibold" style={{ color: COLORS.sub }}>Lucro bruto previsto</p><TrendingUp size={17} color={COLORS.violet} /></div><p className="fp-mono text-xl font-extrabold mt-2">{fmtBRL(metrics.lucro)}</p><p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>Venda menos custo dos produtos</p></div>
+        <div className="metric-card"><div className="flex items-center justify-between"><p className="text-[11px] font-semibold" style={{ color: COLORS.sub }}>Custo dos produtos</p><Package size={17} color={COLORS.sub} /></div><p className="fp-mono text-xl font-extrabold mt-2">{fmtBRL(custoProdutos)}</p><p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>Pedidos não frustrados</p></div>
+        <div className="metric-card"><div className="flex items-center justify-between"><p className="text-[11px] font-semibold" style={{ color: COLORS.sub }}>Ticket médio</p><Receipt size={17} color={COLORS.sub} /></div><p className="fp-mono text-xl font-extrabold mt-2">{fmtBRL(ticketMedio)}</p><p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>{metrics.vendas} pedidos válidos</p></div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-3">
+        <section className="admin-card p-4 sm:p-5 xl:col-span-3">
+          <div className="flex items-center justify-between gap-3 mb-5"><div><h3 className="font-extrabold text-sm">Faturamento por dia</h3><p className="text-[11px] mt-1" style={{ color: COLORS.sub }}>Últimos 7 dias · previsto e recebido</p></div><BarChart3 size={18} color={COLORS.brand} /></div>
+          <div className="h-36 flex items-end gap-2 sm:gap-4">
+            {chartDays.map((day) => (
+              <div key={day.date} className="flex-1 h-full flex flex-col justify-end items-center gap-2 min-w-0">
+                <div className="w-full flex items-end justify-center gap-1 h-[112px]">
+                  <div className="chart-bar flex-1 max-w-7" title={`Previsto: ${fmtBRL(day.value)}`} style={{ height: `${Math.max(day.value > 0 ? 7 : 3, (day.value / chartMax) * 100)}%`, opacity: .95 }} />
+                  <div className="flex-1 max-w-7 rounded-t-md" title={`Recebido: ${fmtBRL(day.paid)}`} style={{ height: `${Math.max(day.paid > 0 ? 7 : 3, (day.paid / chartMax) * 100)}%`, background: "#B9A8FF" }} />
                 </div>
-              );
+                <span className="text-[9px] font-semibold capitalize" style={{ color: COLORS.sub }}>{day.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-4 mt-4"><span className="flex items-center gap-1.5 text-[10px]" style={{ color: COLORS.sub }}><i className="w-2 h-2 rounded-sm" style={{ background: COLORS.brand }} /> Previsto</span><span className="flex items-center gap-1.5 text-[10px]" style={{ color: COLORS.sub }}><i className="w-2 h-2 rounded-sm" style={{ background: "#B9A8FF" }} /> Recebido</span></div>
+        </section>
+
+        <section className="admin-card p-4 sm:p-5 xl:col-span-2">
+          <div className="flex items-center justify-between mb-4"><div><h3 className="font-extrabold text-sm">Despesas registradas</h3><p className="text-[11px] mt-1" style={{ color: COLORS.sub }}>{periodoLabel}</p></div><Wallet size={18} color={COLORS.pending} /></div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between"><span className="text-xs" style={{ color: COLORS.sub }}>Tráfego pago</span><strong className="fp-mono text-sm">{fmtBRL(despesaTrafego)}</strong></div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: "#F0F2F7" }}><div className="h-full rounded-full" style={{ width: `${despesaTotal ? (despesaTrafego / despesaTotal) * 100 : 0}%`, background: "#F0A94A" }} /></div>
+            <div className="flex items-center justify-between"><span className="text-xs" style={{ color: COLORS.sub }}>Outras despesas</span><strong className="fp-mono text-sm">{fmtBRL(despesaOutras)}</strong></div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: "#F0F2F7" }}><div className="h-full rounded-full" style={{ width: `${despesaTotal ? (despesaOutras / despesaTotal) * 100 : 0}%`, background: "#8B78EE" }} /></div>
+            <div className="pt-3 flex items-center justify-between" style={{ borderTop: `1px solid ${COLORS.line}` }}><span className="text-xs font-bold">Total registrado</span><strong className="fp-mono text-lg">{fmtBRL(despesaTotal)}</strong></div>
+          </div>
+        </section>
+      </div>
+
+      {onSaveDespesa && <DespesaWidget despesas={despesas} onSave={onSaveDespesa} />}
+
+      <section>
+        <div className="flex items-center justify-between mb-3"><h3 className="font-extrabold text-sm">Acompanhamento operacional</h3><span className="text-[10px]" style={{ color: COLORS.sub }}>{periodoLabel}</span></div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+          {[
+            { label: "Pendentes", value: metrics.pendentesCount, sub: fmtBRL(metrics.pendentes), color: COLORS.pending, icon: Clock },
+            { label: "Em rota", value: metrics.emRota, sub: "pedidos", color: COLORS.brand, icon: ShoppingCart },
+            { label: "Entregues", value: metrics.entregues, sub: "pedidos", color: "#5975A8", icon: Store },
+            { label: "Pagos", value: metrics.pagosCount, sub: fmtBRL(metrics.pagos), color: COLORS.pos, icon: CheckCircle2 },
+            { label: "Frustrados", value: metrics.frustradosCount, sub: `Perda ${fmtBRL(metrics.prejuizoFrustrados)}`, color: COLORS.neg, icon: AlertTriangle },
+            { label: "Não pagos", value: metrics.naoPagos, sub: "pedidos", color: COLORS.sub, icon: TrendingDown },
+          ].map((item) => {
+            const Icon = item.icon;
+            return <div key={item.label} className="metric-card"><div className="flex items-center justify-between"><p className="text-[10px] font-semibold" style={{ color: COLORS.sub }}>{item.label}</p><Icon size={15} color={item.color} /></div><p className="fp-mono text-2xl font-extrabold mt-2" style={{ color: item.color }}>{item.value}</p><p className="text-[10px] mt-1 truncate" style={{ color: COLORS.sub }}>{item.sub}</p></div>;
+          })}
+        </div>
+      </section>
+
+      {afiliados.length > 0 && (
+        <section>
+          <h3 className="font-extrabold text-sm mb-3">Desempenho por afiliado</h3>
+          <div className="admin-card divide-y" style={{ borderColor: COLORS.line }}>
+            {afiliados.map((affiliate) => {
+              const affiliateMetrics = computeMetrics(filtered.filter((pedido) => pedido.afiliadoId === affiliate.id));
+              return <div key={affiliate.id} className="px-4 py-3 flex items-center justify-between gap-3"><div className="min-w-0"><p className="font-bold text-sm truncate">{affiliate.nome}</p><p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>{affiliateMetrics.vendas} vendas · {affiliateMetrics.pagosCount} pagas</p></div><p className="fp-mono text-sm font-extrabold whitespace-nowrap" style={{ color: COLORS.brand }}>{fmtBRL(affiliateMetrics.faturamento)}</p></div>;
             })}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );
@@ -886,23 +1009,32 @@ function DespesaWidget({ despesas, onSave }) {
   const [trafego, setTrafego] = useState("");
   const [outras, setOutras] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const d = getDespesaDia(despesas, date);
     setTrafego(d.trafego || "");
     setOutras(d.outras || "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date]);
+  }, [date, despesas]);
 
   const handleSave = async () => {
-    await onSave(date, { trafego: Number(trafego) || 0, outras: Number(outras) || 0 });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1600);
+    setSaving(true);
+    setError("");
+    try {
+      await onSave(date, { trafego: Number(trafego) || 0, outras: Number(outras) || 0 });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1600);
+    } catch (saveError) {
+      setError(saveError?.message || "Não foi possível salvar as despesas.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: "#FFFCF3", border: `1px solid ${COLORS.line}` }}>
-      <h3 className="font-bold text-sm flex items-center gap-1.5 mb-3"><Megaphone size={15} color={COLORS.gold} /> Despesas do dia</h3>
+    <div className="admin-card p-4 sm:p-5">
+      <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-xl grid place-items-center" style={{ background: "#FFF5E5", color: COLORS.pending }}><Wallet size={16} /></div><div><h3 className="font-bold text-sm">Despesas do dia</h3><p className="text-[10px]" style={{ color: COLORS.sub }}>Registre tráfego pago e outras despesas</p></div></div>
       <div className="grid grid-cols-3 gap-2 mb-3">
         <div><FieldLabel>Data</FieldLabel>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full rounded-lg px-2 py-2 text-xs" style={inputStyle} />
@@ -914,9 +1046,208 @@ function DespesaWidget({ despesas, onSave }) {
           <input type="number" inputMode="decimal" value={outras} onChange={(e) => setOutras(e.target.value)} className="w-full rounded-lg px-2 py-2 text-xs fp-mono" style={inputStyle} />
         </div>
       </div>
-      <button onClick={handleSave} className="w-full rounded-lg py-2.5 text-xs font-bold text-white" style={{ background: saved ? COLORS.pos : COLORS.brand }}>
-        {saved ? "Despesas salvas ✓" : "Salvar despesas do dia"}
+      {error && <p className="text-xs font-semibold mb-2" style={{ color: COLORS.neg }}>{error}</p>}
+      <button onClick={handleSave} disabled={saving} className="w-full rounded-xl py-2.5 text-xs font-bold text-white" style={{ background: saved ? COLORS.pos : COLORS.brand, opacity: saving ? .7 : 1 }}>
+        {saving ? "Salvando..." : saved ? "Despesas salvas ✓" : "Salvar despesas do dia"}
       </button>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/* Cadastro e catálogo de produtos                                    */
+/* ---------------------------------------------------------------- */
+function ProdutoFormModal({ initial, onCancel, onSave }) {
+  const [form, setForm] = useState(initial || {
+    nome: "", imagemUrl: "", sku: "", custo: "", precoVenda: "", ativo: true,
+  });
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const custo = Number(form.custo) || 0;
+  const precoVenda = Number(form.precoVenda) || 0;
+  const lucroUnitario = precoVenda - custo;
+  const margem = precoVenda > 0 ? (lucroUnitario / precoVenda) * 100 : 0;
+  const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
+
+  const handleSave = async () => {
+    setError("");
+    if (!form.nome.trim()) return setError("Informe o nome do produto.");
+    if (!Number.isFinite(custo) || custo < 0) return setError("Informe um custo válido.");
+    if (!Number.isFinite(precoVenda) || precoVenda <= 0) return setError("O preço de venda precisa ser maior que zero.");
+    if (form.imagemUrl.trim()) {
+      try {
+        const url = new URL(form.imagemUrl.trim());
+        if (url.protocol !== "https:") throw new Error("URL inválida");
+      } catch {
+        return setError("Informe um endereço de imagem válido (https://...).");
+      }
+    }
+
+    setSaving(true);
+    try {
+      await onSave({
+        ...form,
+        nome: form.nome.trim(),
+        imagemUrl: form.imagemUrl.trim(),
+        sku: form.sku.trim(),
+        custo,
+        precoVenda,
+      });
+    } catch (saveError) {
+      setError(saveError?.message || "Não foi possível salvar o produto.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ background: "rgba(9,17,40,.62)", backdropFilter: "blur(5px)" }}>
+      <div className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto fp-scrollbar shadow-2xl">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 sticky top-0 bg-white z-10" style={{ borderBottom: `1px solid ${COLORS.line}` }}>
+          <div>
+            <p className="page-eyebrow">Catálogo da operação</p>
+            <h3 className="text-lg font-extrabold mt-1">{initial ? "Editar produto" : "Novo produto"}</h3>
+          </div>
+          <button onClick={onCancel} className="p-2 rounded-xl hover:bg-slate-100" aria-label="Fechar"><X size={19} /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div>
+            <FieldLabel>Nome do produto *</FieldLabel>
+            <input autoFocus className="w-full rounded-xl px-3.5 py-3 text-sm" style={inputStyle} placeholder="Ex.: Regata Sauna Modeladora" value={form.nome} onChange={set("nome")} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>SKU (opcional)</FieldLabel>
+              <input className="w-full rounded-xl px-3.5 py-3 text-sm" style={inputStyle} placeholder="Ex.: REG-001" value={form.sku} onChange={set("sku")} />
+            </div>
+            <div>
+              <FieldLabel>Imagem por URL (opcional)</FieldLabel>
+              <input type="url" className="w-full rounded-xl px-3.5 py-3 text-sm" style={inputStyle} placeholder="https://..." value={form.imagemUrl} onChange={set("imagemUrl")} />
+            </div>
+          </div>
+          {form.imagemUrl.trim() && (
+            <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: "#F5F7FB", border: `1px solid ${COLORS.line}` }}>
+              <div className="product-image"><img src={form.imagemUrl} alt="Prévia do produto" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div>
+              <p className="text-xs" style={{ color: COLORS.sub }}>Prévia da imagem do produto</p>
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Custo de aquisição (R$) *</FieldLabel>
+              <input type="number" min="0" step="0.01" inputMode="decimal" className="w-full rounded-xl px-3.5 py-3 text-sm fp-mono" style={inputStyle} placeholder="0,00" value={form.custo} onChange={set("custo")} />
+            </div>
+            <div>
+              <FieldLabel>Preço de venda (R$) *</FieldLabel>
+              <input type="number" min="0.01" step="0.01" inputMode="decimal" className="w-full rounded-xl px-3.5 py-3 text-sm fp-mono" style={inputStyle} placeholder="0,00" value={form.precoVenda} onChange={set("precoVenda")} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl p-3.5" style={{ background: "#F0F3FF" }}>
+              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#6675B9" }}>Lucro bruto unitário</p>
+              <p className="fp-mono text-lg font-extrabold mt-1" style={{ color: lucroUnitario >= 0 ? COLORS.brand : COLORS.neg }}>{fmtBRL(lucroUnitario)}</p>
+            </div>
+            <div className="rounded-xl p-3.5" style={{ background: "#F2EEFF" }}>
+              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#806BB8" }}>Margem bruta</p>
+              <p className="fp-mono text-lg font-extrabold mt-1" style={{ color: "#7357D8" }}>{margem.toFixed(2).replace(".", ",")}%</p>
+            </div>
+          </div>
+          <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3" style={{ border: `1px solid ${COLORS.line}` }}>
+            <span><span className="block text-sm font-bold">Produto ativo</span><span className="block text-[11px] mt-0.5" style={{ color: COLORS.sub }}>Produtos inativos não aparecem para novos pedidos</span></span>
+            <input type="checkbox" checked={form.ativo !== false} onChange={(event) => setForm((current) => ({ ...current, ativo: event.target.checked }))} className="h-4 w-4 accent-indigo-600" />
+          </label>
+          {error && <p className="text-xs font-semibold px-3 py-2.5 rounded-lg" style={{ color: COLORS.neg, background: COLORS.negBg }}>{error}</p>}
+          <div className="flex gap-3 pt-1">
+            <button onClick={onCancel} disabled={saving} className="secondary-button flex-1">Cancelar</button>
+            <button onClick={handleSave} disabled={saving} className="primary-button flex-1">{saving ? "Salvando..." : "Salvar produto"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProdutosTab({ products, onNew, onEdit, onToggle, onDelete }) {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("ativos");
+  const ativos = products.filter((p) => p.ativo).length;
+  const filtered = products
+    .filter((p) => p.nome.toLowerCase().includes(query.toLowerCase()) || (p.sku || "").toLowerCase().includes(query.toLowerCase()))
+    .filter((p) => filter === "todos" || (filter === "ativos" ? p.ativo : !p.ativo));
+
+  return (
+    <div className="px-4 pt-5 pb-6 space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div>
+          <p className="page-eyebrow">Catálogo e precificação</p>
+          <h2 className="text-2xl font-extrabold mt-1">Produtos</h2>
+          <p className="text-sm mt-1" style={{ color: COLORS.sub }}>Cadastre custos e preços para acelerar o registro de pedidos.</p>
+        </div>
+        <button onClick={onNew} className="primary-button"><Plus size={15} /> Novo produto</button>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="metric-card"><p className="text-[11px] font-semibold" style={{ color: COLORS.sub }}>Produtos cadastrados</p><p className="text-2xl font-extrabold mt-1">{products.length}</p></div>
+        <div className="metric-card"><p className="text-[11px] font-semibold" style={{ color: COLORS.sub }}>Ativos</p><p className="text-2xl font-extrabold mt-1" style={{ color: COLORS.pos }}>{ativos}</p></div>
+        <div className="metric-card col-span-2 sm:col-span-1"><p className="text-[11px] font-semibold" style={{ color: COLORS.sub }}>Inativos</p><p className="text-2xl font-extrabold mt-1" style={{ color: COLORS.sub }}>{products.length - ativos}</p></div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" color={COLORS.sub} />
+          <input className="w-full rounded-xl pl-9 pr-3 py-3 text-sm" style={inputStyle} placeholder="Buscar por nome ou SKU..." value={query} onChange={(event) => setQuery(event.target.value)} />
+        </div>
+        <div className="flex rounded-xl p-1" style={{ background: "#E9EDF6" }}>
+          {[{ id: "ativos", label: "Ativos" }, { id: "inativos", label: "Inativos" }, { id: "todos", label: "Todos" }].map((item) => (
+            <button key={item.id} onClick={() => setFilter(item.id)} className="px-3 py-2 rounded-lg text-xs font-bold" style={filter === item.id ? { background: "#fff", color: COLORS.brand, boxShadow: "0 1px 4px rgba(20,30,60,.08)" } : { color: COLORS.sub }}>{item.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="admin-card text-center py-14 px-5">
+          <div className="w-12 h-12 rounded-2xl mx-auto mb-3 grid place-items-center" style={{ background: "#EEF1FF", color: COLORS.brand }}><Boxes size={22} /></div>
+          <p className="font-bold text-sm">{products.length === 0 ? "Seu catálogo começa aqui" : "Nenhum produto encontrado"}</p>
+          <p className="text-xs mt-1 mb-4" style={{ color: COLORS.sub }}>{products.length === 0 ? "Cadastre seus produtos para preencher custo e venda automaticamente nos pedidos." : "Tente alterar a busca ou o filtro de status."}</p>
+          {products.length === 0 && <button onClick={onNew} className="primary-button"><Plus size={15} /> Cadastrar primeiro produto</button>}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+          {filtered.map((product) => {
+            const profit = product.precoVenda - product.custo;
+            const margin = product.precoVenda > 0 ? (profit / product.precoVenda) * 100 : 0;
+            return (
+              <article key={product.id} className="admin-card p-4 sm:p-5">
+                <div className="flex items-start gap-3">
+                  <div className="product-image">
+                    {product.imagemUrl ? <img src={product.imagemUrl} alt={product.nome} loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} /> : <Package size={23} />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-extrabold text-sm truncate">{product.nome}</h3>
+                        <p className="text-[11px] mt-1" style={{ color: COLORS.sub }}>{product.sku ? `SKU ${product.sku}` : "Sem SKU"} · cadastrado em {product.criadoEm ? new Date(product.criadoEm).toLocaleDateString("pt-BR") : "—"}</p>
+                      </div>
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={product.ativo ? { background: COLORS.posBg, color: COLORS.pos } : { background: "#EEF0F5", color: COLORS.sub }}>{product.ativo ? "Ativo" : "Inativo"}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 mt-4">
+                      <div><p className="text-[9px] font-bold uppercase tracking-wide" style={{ color: COLORS.sub }}>Custo</p><p className="fp-mono text-xs font-bold mt-1">{fmtBRL(product.custo)}</p></div>
+                      <div><p className="text-[9px] font-bold uppercase tracking-wide" style={{ color: COLORS.sub }}>Venda</p><p className="fp-mono text-xs font-bold mt-1">{fmtBRL(product.precoVenda)}</p></div>
+                      <div><p className="text-[9px] font-bold uppercase tracking-wide" style={{ color: COLORS.sub }}>Lucro / margem</p><p className="fp-mono text-xs font-bold mt-1" style={{ color: profit >= 0 ? COLORS.pos : COLORS.neg }}>{fmtBRL(profit)}</p><p className="text-[10px] font-semibold" style={{ color: COLORS.sub }}>{margin.toFixed(2).replace(".", ",")}%</p></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: `1px solid ${COLORS.line}` }}>
+                  <button onClick={() => onToggle(product)} className="text-[11px] font-bold" style={{ color: product.ativo ? COLORS.sub : COLORS.pos }}>{product.ativo ? "Desativar" : "Reativar"}</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => onEdit(product)} className="secondary-button !px-3 !py-2"><Pencil size={13} /> Editar</button>
+                    <button onClick={() => onDelete(product)} className="p-2 rounded-lg" style={{ background: COLORS.negBg, color: COLORS.neg }} aria-label={`Excluir ${product.nome}`}><Trash2 size={15} /></button>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -965,43 +1296,82 @@ function PedidosTab({ pedidos, afiliados, showAfiliadoColumn, onNovo, onEdit, on
         })}
       </div>
       {sorted.length === 0 ? (
-        <div className="text-center py-16">
+        <div className="admin-card text-center py-16">
           <Package size={32} color={COLORS.sub} className="mx-auto mb-3" />
           <p className="text-sm font-semibold">Nenhum pedido encontrado</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {sorted.map((p) => {
-            const lucro = (Number(p.venda) || 0) - (Number(p.custo) || 0);
-            const affiliate = showAfiliadoColumn ? affName(p.afiliadoId) : null;
-            return (
-              <div key={p.id} className="bg-white rounded-2xl p-4" style={{ border: `1px solid ${COLORS.line}` }}>
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-bold text-sm">{p.cliente}</p>
-                    {affiliate && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md inline-block mt-1" style={{ background: "#E1F0EC", color: COLORS.brand }}>via {affiliate}</span>}
+        <>
+          <div className="hidden lg:block admin-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead style={{ background: "#F8F9FC", borderBottom: `1px solid ${COLORS.line}` }}>
+                  <tr className="text-[10px] uppercase tracking-wider" style={{ color: COLORS.sub }}>
+                    <th className="px-4 py-3 font-extrabold">Cliente / produto</th>
+                    <th className="px-4 py-3 font-extrabold">Data</th>
+                    {showAfiliadoColumn && <th className="px-4 py-3 font-extrabold">Afiliado</th>}
+                    <th className="px-4 py-3 font-extrabold">Status</th>
+                    <th className="px-4 py-3 font-extrabold text-right">Custo</th>
+                    <th className="px-4 py-3 font-extrabold text-right">Venda</th>
+                    <th className="px-4 py-3 font-extrabold text-right">Lucro bruto</th>
+                    <th className="px-4 py-3 font-extrabold text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((pedido) => {
+                    const lucro = (Number(pedido.venda) || 0) - (Number(pedido.custo) || 0);
+                    return (
+                      <tr key={pedido.id} className="hover:bg-slate-50" style={{ borderBottom: `1px solid ${COLORS.line}` }}>
+                        <td className="px-4 py-3"><p className="text-xs font-bold">{pedido.cliente}</p><p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>{pedido.produtoNome || "Pedido manual"}</p></td>
+                        <td className="px-4 py-3"><p className="text-xs font-semibold">{fmtDate(pedido.dataPedido)}</p><p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>Prev.: {fmtDate(pedido.previsaoEntrega)}</p></td>
+                        {showAfiliadoColumn && <td className="px-4 py-3 text-xs" style={{ color: COLORS.sub }}>{affName(pedido.afiliadoId) || "—"}</td>}
+                        <td className="px-4 py-3"><StatusBadge status={pedido.status} /></td>
+                        <td className="px-4 py-3 text-right fp-mono text-xs">{fmtBRL(pedido.custo)}</td>
+                        <td className="px-4 py-3 text-right fp-mono text-xs font-semibold">{fmtBRL(pedido.venda)}</td>
+                        <td className="px-4 py-3 text-right fp-mono text-xs font-bold" style={{ color: lucro >= 0 ? COLORS.pos : COLORS.neg }}>{fmtBRL(lucro)}</td>
+                        <td className="px-4 py-3"><div className="flex justify-end gap-1.5"><button onClick={() => onEdit(pedido)} className="p-2 rounded-lg" style={{ background: "#EEF1FF", color: COLORS.brand }} aria-label="Editar pedido"><Pencil size={14} /></button>{onDelete && <button onClick={() => onDelete(pedido.id)} className="p-2 rounded-lg" style={{ background: COLORS.negBg, color: COLORS.neg }} aria-label="Excluir pedido"><Trash2 size={14} /></button>}</div></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="space-y-3 lg:hidden">
+            {sorted.map((p) => {
+              const lucro = (Number(p.venda) || 0) - (Number(p.custo) || 0);
+              const affiliate = showAfiliadoColumn ? affName(p.afiliadoId) : null;
+              return (
+                <div key={p.id} className="bg-white rounded-2xl p-4" style={{ border: `1px solid ${COLORS.line}` }}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-bold text-sm">{p.cliente}</p>
+                      {affiliate && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md inline-block mt-1" style={{ background: "#EEF1FF", color: COLORS.brand }}>via {affiliate}</span>}
+                      {p.produtoNome && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md inline-block mt-1 ml-1" style={{ background: "#F0F2F7", color: COLORS.sub }}>{p.produtoNome}</span>}
+                    </div>
+                    <StatusBadge status={p.status} />
                   </div>
-                  <StatusBadge status={p.status} />
-                </div>
-                <div className="grid grid-cols-2 gap-y-1 text-xs mb-3" style={{ color: COLORS.sub }}>
-                  <span>Pedido: {fmtDate(p.dataPedido)}</span>
-                  <span>Previsão: {fmtDate(p.previsaoEntrega)}</span>
-                </div>
-                <div className="flex items-end justify-between">
-                  <div className="fp-mono text-xs space-y-0.5">
-                    <p style={{ color: COLORS.sub }}>Custo <span className="font-semibold" style={{ color: COLORS.ink }}>{fmtBRL(p.custo)}</span></p>
-                    <p style={{ color: COLORS.sub }}>Venda <span className="font-semibold" style={{ color: COLORS.ink }}>{fmtBRL(p.venda)}</span></p>
-                    <p style={{ color: COLORS.pos }}>Lucro <span className="font-bold">{fmtBRL(lucro)}</span></p>
+                  <div className="grid grid-cols-2 gap-y-1 text-xs mb-3" style={{ color: COLORS.sub }}>
+                    <span>Pedido: {fmtDate(p.dataPedido)}</span>
+                    <span>Previsão: {fmtDate(p.previsaoEntrega)}</span>
                   </div>
-                  <div className="flex gap-1.5">
-                    <button onClick={() => onEdit(p)} className="p-2 rounded-lg" style={{ background: "#E1F0EC" }}><Pencil size={14} color={COLORS.brand} /></button>
-                    {onDelete && <button onClick={() => onDelete(p.id)} className="p-2 rounded-lg" style={{ background: COLORS.negBg }}><Trash2 size={14} color={COLORS.neg} /></button>}
+                  <div className="flex items-end justify-between">
+                    <div className="fp-mono text-xs space-y-0.5">
+                      <p style={{ color: COLORS.sub }}>Custo <span className="font-semibold" style={{ color: COLORS.ink }}>{fmtBRL(p.custo)}</span></p>
+                      <p style={{ color: COLORS.sub }}>Venda <span className="font-semibold" style={{ color: COLORS.ink }}>{fmtBRL(p.venda)}</span></p>
+                      <p style={{ color: COLORS.pos }}>Lucro bruto <span className="font-bold">{fmtBRL(lucro)}</span></p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => onEdit(p)} className="p-2 rounded-lg" style={{ background: "#EEF1FF" }}><Pencil size={14} color={COLORS.brand} /></button>
+                      {onDelete && <button onClick={() => onDelete(p.id)} className="p-2 rounded-lg" style={{ background: COLORS.negBg }}><Trash2 size={14} color={COLORS.neg} /></button>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
@@ -1055,7 +1425,7 @@ function FrustradosTab({ pedidos, onEdit, onDelete }) {
                   <p style={{ color: COLORS.sub }}>Venda perdida <span className="font-semibold">{fmtBRL(p.venda)}</span></p>
                 </div>
                 <div className="flex gap-1.5">
-                  <button onClick={() => onEdit(p)} className="p-2 rounded-lg" style={{ background: "#E1F0EC" }}><Pencil size={14} color={COLORS.brand} /></button>
+                  <button onClick={() => onEdit(p)} className="p-2 rounded-lg" style={{ background: "#EEF1FF" }}><Pencil size={14} color={COLORS.brand} /></button>
                   <button onClick={() => onDelete(p.id)} className="p-2 rounded-lg" style={{ background: COLORS.negBg }}><Trash2 size={14} color={COLORS.neg} /></button>
                 </div>
               </div>
@@ -1173,14 +1543,33 @@ function AfiliadosTab({ afiliados, pedidos, onAdd, onRemove }) {
 function AdminApp({ profile, onLogout }) {
   const [tab, setTab] = useState("dashboard");
   const [pedidos, setPedidos] = useState([]);
+  const [products, setProducts] = useState([]);
   const [afiliados, setAfiliados] = useState([]);
   const [despesas, setDespesas] = useState({});
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [modal, setModal] = useState(null);
+  const [productModal, setProductModal] = useState(null);
 
   const reload = async () => {
-    const [p, a, d] = await Promise.all([fetchPedidos(), fetchAfiliados(), fetchDespesas()]);
-    setPedidos(p); setAfiliados(a); setDespesas(d); setReady(true);
+    try {
+      const [pedidosResult, productsResult, afiliadosResult, despesasResult] = await Promise.allSettled([
+        fetchPedidos(), fetchProdutos(), fetchAfiliados(), fetchDespesas(),
+      ]);
+      const requiredFailure = [pedidosResult, afiliadosResult, despesasResult].find((result) => result.status === "rejected");
+      if (requiredFailure) throw requiredFailure.reason;
+      setPedidos(pedidosResult.value);
+      setProducts(productsResult.status === "fulfilled" ? productsResult.value : []);
+      setAfiliados(afiliadosResult.value);
+      setDespesas(despesasResult.value);
+      setLoadError(productsResult.status === "rejected"
+        ? "O catálogo de produtos não pôde ser carregado. Confira se a migration 202611150001_produtos_pedidos_financeiro.sql foi executada no Supabase."
+        : "");
+    } catch (error) {
+      setLoadError(error?.message || "Não foi possível carregar os dados da operação.");
+    } finally {
+      setReady(true);
+    }
   };
 
   useEffect(() => {
@@ -1190,10 +1579,10 @@ function AdminApp({ profile, onLogout }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
- const handleSaveDespesa = async (date, values) => {
-  await upsertDespesa(date, values, profile.empresa_id);
-  await reload();
-};
+  const handleSaveDespesa = async (date, values) => {
+    await upsertDespesa(date, values, profile.empresa_id);
+    await reload();
+  };
 
   const handleSavePedido = async (values) => {
     if (modal && modal.id) await updatePedido(modal.id, values);
@@ -1203,66 +1592,123 @@ function AdminApp({ profile, onLogout }) {
   };
 
   const handleDeletePedido = async (id) => {
-    if (window.confirm("Excluir este pedido?")) { await deletePedido(id); await reload(); }
+    if (window.confirm("Excluir este pedido?")) {
+      await deletePedido(id);
+      await reload();
+    }
+  };
+
+  const handleSaveProduto = async (values) => {
+    if (productModal && productModal.id) await updateProduto(productModal.id, values);
+    else await createProduto(values, profile.empresa_id);
+    await reload();
+    setProductModal(null);
+  };
+
+  const handleToggleProduto = async (product) => {
+    try {
+      await updateProduto(product.id, { ativo: !product.ativo });
+      await reload();
+    } catch (error) {
+      window.alert(error?.message || "Não foi possível atualizar o produto.");
+    }
+  };
+
+  const handleDeleteProduto = async (product) => {
+    const confirmed = window.confirm(`Excluir o produto “${product.nome}”? Os pedidos antigos manterão o custo e o preço registrados.`);
+    if (!confirmed) return;
+    try {
+      await deleteProduto(product.id);
+      await reload();
+    } catch (error) {
+      window.alert(error?.message || "Não foi possível excluir o produto.");
+    }
   };
 
   const handleAddAfiliado = async (nome, pin) => { await createAfiliadoComLogin(nome, pin); await reload(); };
   const handleRemoveAfiliado = async (id) => { await desativarAfiliado(id); await reload(); };
 
   const TABS = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "pedidos", label: "Pedidos", icon: ShoppingCart },
-    { id: "afiliados", label: "Afiliados", icon: Users },
-    { id: "frustrados", label: "Frustrados", icon: AlertTriangle },
+    { id: "dashboard", label: "Visão geral", mobileLabel: "Início", icon: LayoutDashboard },
+    { id: "pedidos", label: "Pedidos", mobileLabel: "Pedidos", icon: ShoppingCart },
+    { id: "produtos", label: "Produtos", mobileLabel: "Produtos", icon: Boxes },
+    { id: "afiliados", label: "Afiliados", mobileLabel: "Afiliados", icon: Users },
+    { id: "frustrados", label: "Frustrados", mobileLabel: "Frustrados", icon: AlertTriangle },
   ];
 
   if (!ready) {
-    return <div className="fp-app min-h-screen flex items-center justify-center" style={{ background: COLORS.paper }}><p className="text-sm font-semibold" style={{ color: COLORS.sub }}>Carregando...</p></div>;
+    return <div className="fp-app min-h-screen flex items-center justify-center" style={{ background: COLORS.paper }}><GlobalStyle /><p className="text-sm font-semibold" style={{ color: COLORS.sub }}>Carregando sua operação...</p></div>;
   }
 
   return (
-    <div className="fp-app min-h-screen flex flex-col" style={{ background: COLORS.paper }}>
-      <div className="px-4 pt-5 pb-4 flex items-center justify-between text-white" style={{ background: `linear-gradient(135deg, ${COLORS.brandDeep}, ${COLORS.brand})` }}>
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.18)" }}><Package size={18} color="#fff" /></div>
-          <div>
-            <p className="font-extrabold text-sm leading-tight">Afterpay J27</p>
-            <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.7)" }}>{profile.nome || "Administrador"}</p>
+    <div className="fp-app admin-shell">
+      <GlobalStyle />
+      <aside className="admin-sidebar">
+        <div className="brand-lockup">
+          <div className="brand-mark"><Package size={22} /></div>
+          <div><p className="font-extrabold text-[17px] tracking-tight text-white">afterpay <span style={{ color: "#8D9EFF" }}>J27</span></p><p className="text-[9px] font-bold tracking-[.16em] mt-0.5" style={{ color: "#8290B2" }}>OPERATIONS HUB</p></div>
+        </div>
+        <p className="sidebar-kicker">Workspace</p>
+        <nav className="space-y-1">
+          {TABS.map((item) => {
+            const Icon = item.icon;
+            const active = tab === item.id;
+            return <button key={item.id} onClick={() => setTab(item.id)} className={`sidebar-link ${active ? "active" : ""}`}><Icon size={17} /><span>{item.label}</span>{active && <ChevronRight size={14} className="ml-auto" />}</button>;
+          })}
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl grid place-items-center font-extrabold text-sm" style={{ background: "rgba(126,145,255,.18)", color: "#BFC9FF" }}>{(profile.nome || "A").slice(0, 1).toUpperCase()}</div>
+            <div className="min-w-0"><p className="text-xs font-bold text-white truncate">{profile.nome || "Administrador"}</p><p className="text-[10px] mt-0.5" style={{ color: "#8794B3" }}>Administrador</p></div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <NotificationBell empresaId={profile.empresa_id} />
-          <button onClick={onLogout} className="p-2 rounded-lg" style={{ background: "rgba(255,255,255,0.15)" }}><LogOut size={16} color="#fff" /></button>
+      </aside>
+
+      <main className="admin-main">
+        <header className="admin-topbar">
+          <div className="min-w-0">
+            <p className="page-eyebrow">Operação</p>
+            <h1 className="text-base sm:text-lg font-extrabold mt-0.5 truncate" style={{ color: COLORS.ink }}>{profile.empresa_nome || "Minha operação"}</h1>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden sm:block text-right"><p className="text-xs font-bold">{profile.nome || "Administrador"}</p><p className="text-[10px] mt-0.5" style={{ color: COLORS.sub }}>Painel administrativo</p></div>
+            <div className="rounded-xl p-1.5" style={{ background: "#F0F3FA" }}><NotificationBell empresaId={profile.empresa_id} /></div>
+            <button onClick={onLogout} className="p-2.5 rounded-xl" style={{ background: "#F0F3FA", color: "#53617C" }} aria-label="Sair"><LogOut size={17} /></button>
+          </div>
+        </header>
+
+        <div className="admin-content">
+          {loadError && <div className="mb-4 rounded-xl px-4 py-3 flex items-center justify-between gap-3" style={{ background: COLORS.negBg, color: COLORS.neg }}><p className="text-xs font-semibold">{loadError} Se você acabou de atualizar o sistema, confirme se executou a migration de produtos no Supabase.</p><button onClick={reload} className="shrink-0 text-xs font-extrabold underline">Tentar novamente</button></div>}
+          <div className="admin-page">
+            {tab === "dashboard" && <DashboardTab pedidos={pedidos} afiliados={afiliados} despesas={despesas} onSaveDespesa={handleSaveDespesa} onNovo={() => setModal("new")} />}
+            {tab === "pedidos" && <PedidosTab pedidos={pedidos} afiliados={afiliados} showAfiliadoColumn onNovo={() => setModal("new")} onEdit={(pedido) => setModal(pedido)} onDelete={handleDeletePedido} />}
+            {tab === "produtos" && <ProdutosTab products={products} onNew={() => setProductModal("new")} onEdit={(product) => setProductModal(product)} onToggle={handleToggleProduto} onDelete={handleDeleteProduto} />}
+            {tab === "afiliados" && <AfiliadosTab afiliados={afiliados} pedidos={pedidos} onAdd={handleAddAfiliado} onRemove={handleRemoveAfiliado} />}
+            {tab === "frustrados" && <FrustradosTab pedidos={pedidos} onEdit={(pedido) => setModal(pedido)} onDelete={handleDeletePedido} />}
+          </div>
         </div>
-      </div>
-      <div className="flex-1 overflow-y-auto fp-scrollbar pb-24 max-w-md w-full mx-auto">
-        {tab === "dashboard" && <DashboardTab pedidos={pedidos} afiliados={afiliados} despesas={despesas} onSaveDespesa={handleSaveDespesa} onNovo={() => setModal("new")} />}
-        {tab === "pedidos" && <PedidosTab pedidos={pedidos} afiliados={afiliados} showAfiliadoColumn onNovo={() => setModal("new")} onEdit={(p) => setModal(p)} onDelete={handleDeletePedido} />}
-        {tab === "afiliados" && <AfiliadosTab afiliados={afiliados} pedidos={pedidos} onAdd={handleAddAfiliado} onRemove={handleRemoveAfiliado} />}
-        {tab === "frustrados" && <FrustradosTab pedidos={pedidos} onEdit={(p) => setModal(p)} onDelete={handleDeletePedido} />}
-      </div>
-      <div className="fixed bottom-0 left-0 right-0 bg-white flex items-center justify-around py-2 px-2 max-w-md mx-auto" style={{ borderTop: `1px solid ${COLORS.line}` }}>
-        {TABS.map((t) => {
-          const active = tab === t.id;
-          const Icon = t.icon;
-          return (
-            <button key={t.id} onClick={() => setTab(t.id)} className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl">
-              <Icon size={19} color={active ? COLORS.brand : COLORS.sub} />
-              <span className="text-[10px] font-bold" style={{ color: active ? COLORS.brand : COLORS.sub }}>{t.label}</span>
-            </button>
-          );
-        })}
-      </div>
+
+        <nav className="mobile-nav">
+          {TABS.map((item) => {
+            const Icon = item.icon;
+            const active = tab === item.id;
+            return <button key={item.id} onClick={() => setTab(item.id)} className="flex flex-col items-center gap-1 rounded-xl" style={{ color: active ? COLORS.brand : COLORS.sub, background: active ? "#EEF1FF" : "transparent" }}><Icon size={18} /><span className="font-bold whitespace-nowrap">{item.mobileLabel}</span></button>;
+          })}
+        </nav>
+      </main>
+
       {modal && (
         <PedidoFormModal
           title={modal === "new" ? "Novo pedido" : "Editar pedido"}
           initial={modal === "new" ? null : modal}
           afiliados={afiliados}
+          products={products}
           showAfiliadoField
           onCancel={() => setModal(null)}
           onSave={handleSavePedido}
         />
       )}
+      {productModal && <ProdutoFormModal initial={productModal === "new" ? null : productModal} onCancel={() => setProductModal(null)} onSave={handleSaveProduto} />}
     </div>
   );
 }
@@ -1272,11 +1718,27 @@ function AdminApp({ profile, onLogout }) {
 /* ---------------------------------------------------------------- */
 function AffiliateApp({ profile, onLogout }) {
   const [pedidos, setPedidos] = useState([]);
+  const [products, setProducts] = useState([]);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const today = todayISO();
 
-  const reload = async () => { const p = await fetchPedidos(); setPedidos(p); setReady(true); };
+  const reload = async () => {
+    try {
+      const [pedidosResult, productsResult] = await Promise.allSettled([fetchPedidos(), fetchProdutos()]);
+      if (pedidosResult.status === "rejected") throw pedidosResult.reason;
+      setPedidos(pedidosResult.value);
+      setProducts(productsResult.status === "fulfilled" ? productsResult.value : []);
+      setLoadError(productsResult.status === "rejected"
+        ? "O catálogo de produtos ainda não está disponível. Você pode registrar vendas manualmente; solicite a aplicação da migration ao administrador."
+        : "");
+    } catch (error) {
+      setLoadError(error?.message || "Não foi possível carregar suas vendas.");
+    } finally {
+      setReady(true);
+    }
+  };
 
   useEffect(() => {
     reload();
@@ -1309,6 +1771,7 @@ function AffiliateApp({ profile, onLogout }) {
         </div>
       </div>
       <div className="max-w-md mx-auto px-4 -mt-4 pb-10">
+        {loadError && <div className="rounded-xl p-3 mb-3 text-xs font-semibold" style={{ background: COLORS.negBg, color: COLORS.neg }}>{loadError} <button onClick={reload} className="underline ml-1">Tentar novamente</button></div>}
         <button onClick={() => setShowForm(true)} className="w-full flex items-center justify-center gap-2 text-white text-sm font-bold px-4 py-4 rounded-2xl shadow-sm" style={{ background: COLORS.brand }}>
           <Plus size={18} /> Registrar nova venda
         </button>
@@ -1328,6 +1791,7 @@ function AffiliateApp({ profile, onLogout }) {
                     <p className="font-bold text-sm">{p.cliente}</p>
                     <StatusBadge status={p.status} />
                   </div>
+                  {p.produtoNome && <p className="text-[11px] font-semibold mb-1" style={{ color: COLORS.sub }}>{p.produtoNome}</p>}
                   <p className="text-xs" style={{ color: COLORS.sub }}>Previsão: {fmtDate(p.previsaoEntrega)} · {p.formaPagamento}</p>
                   <p className="fp-mono text-sm font-bold mt-1" style={{ color: COLORS.brand }}>{fmtBRL(p.venda)}</p>
                 </div>
@@ -1337,7 +1801,7 @@ function AffiliateApp({ profile, onLogout }) {
         </div>
       </div>
       {showForm && (
-        <PedidoFormModal title="Registrar nova venda" initial={null} afiliados={[]} showAfiliadoField={false} onCancel={() => setShowForm(false)} onSave={handleSave} />
+        <PedidoFormModal title="Registrar nova venda" initial={null} afiliados={[]} products={products} showAfiliadoField={false} onCancel={() => setShowForm(false)} onSave={handleSave} />
       )}
     </div>
   );
@@ -1356,8 +1820,8 @@ export default function App() {
       if (!p) {
         // Sessão existe mas ainda não tem empresa — provavelmente acabou
         // de confirmar o e-mail. Tenta completar sozinho primeiro.
-        const auto = await tentarCompletarCadastroAutomatico();
-        if (auto) p = await fetchMyProfile();
+        await tentarCompletarCadastroAutomatico();
+        p = await fetchMyProfile();
       }
       if (!p) { setStatus("needsCompany"); return; }
       setProfile(p);

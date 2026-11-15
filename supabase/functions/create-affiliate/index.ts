@@ -11,21 +11,24 @@ const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods":
-    "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-  return new Response(null, {
-    status: 204,
-    headers: CORS,
-  });
-}
+    return new Response(null, { status: 204, headers: CORS });
+  }
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Método não permitido." }), {
+      status: 405,
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const url = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !serviceKey) throw new Error("Configuração do Supabase ausente no servidor.");
     const admin = createClient(url, serviceKey);
 
     // 1) Confirma quem está chamando (precisa ser admin autenticado)

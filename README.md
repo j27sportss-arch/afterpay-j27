@@ -13,6 +13,12 @@ sem ver dado uns dos outros.
 - Notificações em tempo real (sino) via Supabase Realtime — quando um
   pedido é criado, entregue ou pago, todo mundo da mesma empresa vê
   na hora
+- Catálogo de produtos por operação, com SKU, imagem por URL, custo,
+  preço, lucro bruto unitário e margem
+- Seleção de produtos no pedido com snapshot de nome, custo e preço,
+  preservando os valores históricos mesmo após alterações no catálogo
+- Dashboard com faturamento previsto separado do valor efetivamente pago,
+  despesas registradas e indicadores operacionais por período
 
 ## Passo 1 — Crie um projeto NOVO no Supabase
 Recomendo um projeto **separado** do que você já tinha, pra não misturar
@@ -22,6 +28,24 @@ com os dados antigos. Vá em supabase.com → New Project.
 No SQL Editor do novo projeto, cole o conteúdo de `supabase/schema.sql`
 inteiro e clique em Run. Isso cria todas as tabelas, segurança (RLS) e
 funções necessárias.
+
+### Se você já possui um banco Afterpay J27 em uso
+
+**Não rode o `schema.sql` inteiro sobre um banco de produção existente.**
+Ele é a referência de instalação completa. Para atualizar o banco atual sem
+recriar tabelas ou apagar dados, execute somente:
+
+```text
+supabase/migrations/202611150001_produtos_pedidos_financeiro.sql
+```
+
+Essa migration cria o catálogo `produtos`, adiciona o vínculo/snapshot do
+produto nos pedidos e ajusta políticas RLS. Ela mantém os campos históricos
+`pedidos.custo` e `pedidos.venda`; alterações futuras no cadastro do produto
+não recalculam pedidos antigos.
+
+As imagens de produto nesta versão são informadas por URL HTTPS. Não é criado
+um bucket de Storage automaticamente.
 
 ## Passo 3 — Publique a função de criar afiliado
 Essa parte precisa da CLI do Supabase (não tem como fazer só pelo site,
@@ -100,6 +124,9 @@ VAPID_PRIVATE_KEY=SUACHAVEPRIVADA
 VAPID_SUBJECT=mailto:seu-email@dominio.com
 PUSH_WEBHOOK_SECRET=um-segredo-forte-e-aleatorio
 ```
+
+`PUSH_WEBHOOK_SECRET` agora é obrigatório. Se estiver ausente, a Edge Function
+responde com erro 503 e não processa webhooks sem autenticação.
 
 A `VAPID_PUBLIC_KEY` deve ser a mesma usada em `NEXT_PUBLIC_VAPID_PUBLIC_KEY`.
 

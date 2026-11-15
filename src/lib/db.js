@@ -49,7 +49,17 @@ export async function signUpAdmin({ email, password, nomeUsuario, nomeEmpresa })
     nome_usuario: nomeUsuario,
   });
 
-  if (rpcError) throw rpcError;
+  if (rpcError) {
+    // O listener de Auth também pode tentar concluir o cadastro ao receber
+    // SIGNED_IN. Se essa chamada concorrente já criou o profile, o signup
+    // continua válido em vez de mostrar um falso erro de cadastro duplicado.
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .eq("user_id", data.user.id)
+      .maybeSingle();
+    if (profileError || !profile) throw rpcError;
+  }
 
   return data.session;
 }
@@ -80,9 +90,20 @@ export async function fetchMyProfile() {
     .from("profiles")
     .select("user_id, empresa_id, role, afiliado_id, nome")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
   if (error) throw error;
-  return data;
+  if (!data) return null;
+
+  // O nome da operação é exibido no cabeçalho. A consulta continua sujeita
+  // à policy empresas_own, portanto só retorna a empresa da sessão atual.
+  const { data: empresa, error: empresaError } = await supabase
+    .from("empresas")
+    .select("nome")
+    .eq("id", data.empresa_id)
+    .maybeSingle();
+  if (empresaError) throw empresaError;
+
+  return { ...data, empresa_nome: empresa?.nome || null };
 }
 
 // Lista pública (sem dados sensíveis) de afiliados com login ativo,
@@ -115,6 +136,8 @@ const rowToPedido = (r) => ({
   formaPagamento: r.forma_pagamento,
   dataPagamento: r.data_pagamento,
   afiliadoId: r.afiliado_id,
+  produtoId: r.produto_id || null,
+  produtoNome: r.produto_nome || null,
   criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : Date.now(),
 });
 
@@ -130,6 +153,10 @@ const pedidoToRow = (p, empresaId) => {
     data_pagamento: p.dataPagamento || null,
     afiliado_id: p.afiliadoId || null,
   };
+  if (p.produtoId || p.produtoNome) {
+    row.produto_id = p.produtoId || null;
+    row.produto_nome = p.produtoNome || null;
+  }
   if (empresaId) row.empresa_id = empresaId;
   if (p.id) row.id = p.id;
   return row;
@@ -167,10 +194,84 @@ export async function updatePedido(id, patch) {
   if ("status" in patch) row.status = patch.status;
   if ("formaPagamento" in patch) row.forma_pagamento = patch.formaPagamento;
   if ("dataPagamento" in patch) row.data_pagamento = patch.dataPagamento || null;
+  if ("afiliadoId" in patch) row.afiliado_id = patch.afiliadoId || null;
+  if (patch.produtoAlterado || patch.produtoId || patch.produtoNome) {
+    row.produto_id = patch.produtoId || null;
+    row.produto_nome = patch.produtoNome || null;
+  }
 
   const { data, error } = await supabase.from("pedidos").update(row).eq("id", id).select().single();
   if (error) throw error;
   return rowToPedido(data);
+}
+
+/* ------------------------------------------------------------ */
+/* Produtos                                                       */
+/* ------------------------------------------------------------ */
+const rowToProduto = (r) => ({
+  id: r.id,
+  nome: r.nome,
+  imagemUrl: r.imagem_url || "",
+  sku: r.sku || "",
+  custo: Number(r.custo) || 0,
+  precoVenda: Number(r.preco_venda) || 0,
+  ativo: Boolean(r.ativo),
+  criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : Date.now(),
+  atualizadoEm: r.atualizado_em ? new Date(r.atualizado_em).getTime() : null,
+});
+
+const produtoToRow = (p) => ({
+  nome: String(p.nome || "").trim(),
+  imagem_url: p.imagemUrl ? String(p.imagemUrl).trim() : null,
+  sku: p.sku ? String(p.sku).trim() : null,
+  custo: Number(p.custo) || 0,
+  preco_venda: Number(p.precoVenda) || 0,
+  ativo: p.ativo !== false,
+});
+
+export async function fetchProdutos() {
+  const { data, error } = await supabase
+    .from("produtos")
+    .select("*")
+    .order("criado_em", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(rowToProduto);
+}
+
+export async function createProduto(produto, empresaId) {
+  const row = produtoToRow(produto);
+  if (empresaId) row.empresa_id = empresaId;
+  const { data, error } = await supabase
+    .from("produtos")
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToProduto(data);
+}
+
+export async function updateProduto(id, patch) {
+  const row = {};
+  if ("nome" in patch) row.nome = String(patch.nome || "").trim();
+  if ("imagemUrl" in patch) row.imagem_url = patch.imagemUrl ? String(patch.imagemUrl).trim() : null;
+  if ("sku" in patch) row.sku = patch.sku ? String(patch.sku).trim() : null;
+  if ("custo" in patch) row.custo = Number(patch.custo) || 0;
+  if ("precoVenda" in patch) row.preco_venda = Number(patch.precoVenda) || 0;
+  if ("ativo" in patch) row.ativo = Boolean(patch.ativo);
+
+  const { data, error } = await supabase
+    .from("produtos")
+    .update(row)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToProduto(data);
+}
+
+export async function deleteProduto(id) {
+  const { error } = await supabase.from("produtos").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export async function deletePedido(id) {
@@ -318,12 +419,20 @@ export async function tentarCompletarCadastroAutomatico() {
     return false;
   }
 
-  await completarCadastroEmpresa({
-    nomeEmpresa,
-    nomeUsuario,
-  });
-
-  return true;
+  try {
+    await completarCadastroEmpresa({ nomeEmpresa, nomeUsuario });
+    return true;
+  } catch (error) {
+    // Outra chamada de Auth pode ter criado a empresa entre a leitura do
+    // profile e a RPC. Nesse caso, o chamador deve apenas reler o profile.
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!profileError && profile) return false;
+    throw error;
+  }
 }
 /* ------------------------------------------------------------ */
 /* Realtime                                                         */
@@ -333,6 +442,7 @@ export function subscribeAll(onChange) {
   const channel = supabase
     .channel("j27-changes")
     .on("postgres_changes", { event: "*", schema: "public", table: "pedidos" }, onChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "produtos" }, onChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "afiliados" }, onChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "despesas" }, onChange)
     .subscribe();

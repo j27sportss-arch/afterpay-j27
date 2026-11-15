@@ -1,5 +1,7 @@
 # Afterpay J27 — Inventário Real do Banco
 
+> **Nota de atualização — 15/11/2026:** este documento contém histórico de auditoria de 21/09/2026. Para o estado vigente do ZIP atualizado, consulte [`ATUALIZACAO_2026-11-15.md`](ATUALIZACAO_2026-11-15.md), que prevalece em caso de divergência.
+
 **Fonte:** `supabase/schema.sql` e migration de Web Push.  
 **Data:** 2026-09-21.
 

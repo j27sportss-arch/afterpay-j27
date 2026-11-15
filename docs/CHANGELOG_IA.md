@@ -1,5 +1,33 @@
 # Afterpay J27 — Changelog de IA
 
+> Para o estado atual, consulte também [`ATUALIZACAO_2026-11-15.md`](ATUALIZACAO_2026-11-15.md).
+
+## 2026-11-15 — Modernização visual, catálogo de produtos e estabilização
+
+### Objetivo
+
+Modernizar o Afterpay J27 preservando a arquitetura Next.js/Supabase, adicionar o catálogo de produtos integrado aos pedidos e corrigir pontos de autorização e inicialização identificados na revisão do ZIP.
+
+### Principais alterações
+
+- Interface SaaS com azul-marinho, azul elétrico e violeta; sidebar desktop e navegação mobile.
+- Novo módulo Produtos com cadastro, edição, exclusão, ativação/desativação, SKU, URL de imagem, custo, preço, lucro unitário e margem.
+- Seleção de produto nos formulários de pedido, tanto para administradores quanto para afiliados.
+- Snapshot de nome, custo e preço no pedido; os campos financeiros existentes continuam preservando o histórico.
+- Migration incremental `202611150001_produtos_pedidos_financeiro.sql` e cópia `migration_afterpay_j27.sql`.
+- RLS de produtos e correção das políticas administrativas com `WITH CHECK` incompleto.
+- Policy de notificações mais restrita.
+- `PUSH_WEBHOOK_SECRET` obrigatório na Edge Function de push.
+- Correção de `fetchMyProfile()` para retornar `null` quando o profile ainda não existe.
+- Manifest PWA, novos ícones e dependências fixadas às versões do lockfile.
+- Dashboard com filtros de período, separação entre faturamento previsto/recebido e resultado estimado após despesas registradas.
+
+### Validação
+
+- Parser TypeScript: JSX/JavaScript sem erros de sintaxe detectados.
+- `npm ci`: não concluído por indisponibilidade de DNS para `registry.npmjs.org`; modo offline falhou por pacote ausente no cache.
+- `next build`, testes remotos de Supabase, RLS e Push: não executados; exigem dependências/credenciais/ambiente externo.
+
 ## 2026-09-21 — Fase 0: Auditoria e Documentação
 
 ### Objetivo
