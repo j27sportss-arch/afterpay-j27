@@ -242,10 +242,12 @@ function AuthGate() {
     >
       <div className="w-full max-w-sm">
         <div className="text-center mb-8 pt-6">
-          <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)" }}>
-            <Package size={30} color="#fff" />
-          </div>
-          <h1 className="text-2xl font-extrabold text-white">Afterpay J27</h1>
+          
+<img
+  src="/j27-logo.svg"
+  alt="Afterpay J27"
+  className="w-full max-w-[300px] h-auto mx-auto mb-5"
+/>
           <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.75)" }}>
             Controle de vendas, entregas e afiliados
           </p>
