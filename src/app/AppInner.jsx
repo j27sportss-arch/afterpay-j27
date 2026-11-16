@@ -698,45 +698,116 @@ function NotificationBell({ empresaId }) {
 /* ---------------------------------------------------------------- */
 /* Modal de pedido                                                    */
 /* ---------------------------------------------------------------- */
+
 function PedidoFormModal({ title, initial, afiliados, products = [], showAfiliadoField, onCancel, onSave }) {
   const [form, setForm] = useState(
     initial || {
       cliente: "", dataPedido: todayISO(), previsaoEntrega: todayISO(),
       custo: "", venda: "", status: "Em Rota", formaPagamento: "PIX",
-      dataPagamento: "", afiliadoId: "", produtoId: "", produtoNome: "", produtoAlterado: false,
+      dataPagamento: "", afiliadoId: "", produtoId: "", produtoNome: "",
+      produtoVariacao: "", produtoAlterado: false,
     }
   );
+
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
   const lucro = (Number(form.venda) || 0) - (Number(form.custo) || 0);
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e && e.target ? e.target.value : e }));
-  const produtosDisponiveis = (products || []).filter((p) => p.ativo || p.id === form.produtoId);
-  const produtoSelecionado = produtosDisponiveis.find((p) => p.id === form.produtoId);
+
+  const set = (k) => (e) => setForm((f) => ({
+    ...f,
+    [k]: e && e.target ? e.target.value : e,
+  }));
+
+  const produtosDisponiveis = (products || []).filter(
+    (p) => p.ativo || p.id === form.produtoId
+  );
+
+  const produtoSelecionado = produtosDisponiveis.find(
+    (p) => p.id === form.produtoId
+  );
+
+  const variacoesProduto = produtoSelecionado
+    ? (
+        Array.isArray(produtoSelecionado.variacoes) &&
+        produtoSelecionado.variacoes.length
+          ? produtoSelecionado.variacoes
+          : [{
+              nome: "Padrão",
+              custo: produtoSelecionado.custo,
+              precoVenda: produtoSelecionado.precoVenda,
+            }]
+      )
+    : [];
 
   const selecionarProduto = (produtoId) => {
     if (!produtoId) {
-      setForm((f) => ({ ...f, produtoId: "", produtoNome: "", produtoAlterado: true }));
+      setForm((f) => ({
+        ...f,
+        produtoId: "",
+        produtoNome: "",
+        produtoVariacao: "",
+        produtoAlterado: true,
+      }));
       return;
     }
+
     const produto = products.find((p) => p.id === produtoId);
     if (!produto) return;
+
+    const variacoes =
+      Array.isArray(produto.variacoes) && produto.variacoes.length
+        ? produto.variacoes
+        : [{
+            nome: "Padrão",
+            custo: produto.custo,
+            precoVenda: produto.precoVenda,
+          }];
+
+    const primeira = variacoes[0];
+
     setForm((f) => ({
       ...f,
       produtoId: produto.id,
       produtoNome: produto.nome,
+      produtoVariacao: primeira.nome,
       produtoAlterado: true,
-      custo: String(produto.custo),
-      venda: String(produto.precoVenda),
+      custo: String(primeira.custo ?? produto.custo ?? 0),
+      venda: String(primeira.precoVenda ?? produto.precoVenda ?? 0),
+    }));
+  };
+
+  const selecionarVariacao = (nome) => {
+    const variacao = variacoesProduto.find((v) => v.nome === nome);
+    if (!variacao) return;
+
+    setForm((f) => ({
+      ...f,
+      produtoVariacao: variacao.nome,
+      custo: String(variacao.custo ?? 0),
+      venda: String(variacao.precoVenda ?? 0),
     }));
   };
 
   const handleSave = async () => {
-    if (!form.cliente.trim()) return setError("Informe o nome do cliente.");
-    if (!form.venda || Number(form.venda) <= 0) return setError("Informe o valor da venda.");
+    if (!form.cliente.trim()) {
+      return setError("Informe o nome do cliente.");
+    }
+
+    if (!form.venda || Number(form.venda) <= 0) {
+      return setError("Informe o valor da venda.");
+    }
+
     setError("");
     setSaving(true);
+
     try {
-      await onSave({ ...form, custo: Number(form.custo) || 0, venda: Number(form.venda) || 0 });
+      await onSave({
+        ...form,
+        produtoVariacao: form.produtoVariacao || "",
+        custo: Number(form.custo) || 0,
+        venda: Number(form.venda) || 0,
+      });
     } catch (e) {
       setError(e?.message || "Não foi possível salvar o pedido.");
     } finally {
@@ -745,27 +816,58 @@ function PedidoFormModal({ title, initial, afiliados, products = [], showAfiliad
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ background: "rgba(27,27,47,0.55)" }}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: "rgba(27,27,47,0.55)" }}>
+
       <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto fp-scrollbar">
+
         <div className="flex items-center justify-between px-5 pt-5 pb-3 sticky top-0 bg-white z-10">
           <h3 className="text-lg font-bold">{title}</h3>
-          <button onClick={onCancel} className="p-1.5 rounded-full hover:bg-gray-100"><X size={20} /></button>
+          <button onClick={onCancel} className="p-1.5 rounded-full hover:bg-gray-100">
+            <X size={20} />
+          </button>
         </div>
+
         <div className="px-5 pb-5 space-y-4">
+
           <div>
             <FieldLabel>Nome do cliente</FieldLabel>
-            <input className="w-full rounded-xl px-3.5 py-2.5 text-sm" style={inputStyle} value={form.cliente} onChange={set("cliente")} />
+            <input
+              className="w-full rounded-xl px-3.5 py-2.5 text-sm"
+              style={inputStyle}
+              value={form.cliente}
+              onChange={set("cliente")}
+            />
           </div>
+
           <div className="grid grid-cols-2 gap-3">
-            <div><FieldLabel>Data do pedido</FieldLabel>
-              <input type="date" className="w-full rounded-xl px-3 py-2.5 text-sm" style={inputStyle} value={form.dataPedido} onChange={set("dataPedido")} />
+            <div>
+              <FieldLabel>Data do pedido</FieldLabel>
+              <input
+                type="date"
+                className="w-full rounded-xl px-3 py-2.5 text-sm"
+                style={inputStyle}
+                value={form.dataPedido}
+                onChange={set("dataPedido")}
+              />
             </div>
-            <div><FieldLabel>Previsão de entrega</FieldLabel>
-              <input type="date" className="w-full rounded-xl px-3 py-2.5 text-sm" style={inputStyle} value={form.previsaoEntrega} onChange={set("previsaoEntrega")} />
+
+            <div>
+              <FieldLabel>Previsão de entrega</FieldLabel>
+              <input
+                type="date"
+                className="w-full rounded-xl px-3 py-2.5 text-sm"
+                style={inputStyle}
+                value={form.previsaoEntrega}
+                onChange={set("previsaoEntrega")}
+              />
             </div>
           </div>
+
+          {/* SELEÇÃO DO PRODUTO */}
           <div>
             <FieldLabel>Produto cadastrado (opcional)</FieldLabel>
+
             <select
               className="w-full rounded-xl px-3 py-2.5 text-sm"
               style={inputStyle}
@@ -773,72 +875,194 @@ function PedidoFormModal({ title, initial, afiliados, products = [], showAfiliad
               onChange={(e) => selecionarProduto(e.target.value)}
             >
               <option value="">Cadastro manual / sem produto</option>
+
               {form.produtoId && !produtoSelecionado && form.produtoNome && (
-                <option value={form.produtoId}>{form.produtoNome} · produto indisponível</option>
+                <option value={form.produtoId}>
+                  {form.produtoNome} · produto indisponível
+                </option>
               )}
+
               {produtosDisponiveis.map((produto) => (
                 <option key={produto.id} value={produto.id}>
                   {produto.nome}{produto.ativo ? "" : " · inativo"}
                 </option>
               ))}
             </select>
-            {produtoSelecionado && (
-              <p className="text-[11px] mt-1.5" style={{ color: COLORS.sub }}>
-                Valores copiados do cadastro. Você ainda pode ajustar custo e preço neste pedido.
+          </div>
+
+          {/* SELEÇÃO DA VARIAÇÃO */}
+          {produtoSelecionado && (
+            <div className="rounded-xl p-3.5 space-y-2"
+              style={{ background: "#F0F3FF", border: "1px solid #DCE3FF" }}>
+
+              <FieldLabel>Escolha a variação do produto</FieldLabel>
+
+              <select
+                className="w-full rounded-xl px-3 py-3 text-sm font-semibold"
+                style={inputStyle}
+                value={form.produtoVariacao || ""}
+                onChange={(e) => selecionarVariacao(e.target.value)}
+              >
+                {!form.produtoVariacao && (
+                  <option value="">Selecione uma variação</option>
+                )}
+
+                {form.produtoVariacao &&
+                  !variacoesProduto.some(v => v.nome === form.produtoVariacao) && (
+                    <option value={form.produtoVariacao}>
+                      {form.produtoVariacao} · registro anterior
+                    </option>
+                  )}
+
+                {variacoesProduto.map((v, index) => (
+                  <option key={index} value={v.nome}>
+                    {v.nome} — {fmtBRL(Number(v.precoVenda) || 0)}
+                  </option>
+                ))}
+              </select>
+
+              <p className="text-[11px]" style={{ color: COLORS.sub }}>
+                Ao selecionar uma variação, o custo e o preço de venda
+                serão preenchidos automaticamente.
               </p>
-            )}
-            {!produtoSelecionado && form.produtoNome && !form.produtoId && (
-              <p className="text-[11px] mt-1.5" style={{ color: COLORS.sub }}>
-                Produto histórico: {form.produtoNome}. Os valores abaixo são os registrados no pedido.
-              </p>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><FieldLabel>Custo do produto (R$)</FieldLabel>
-              <input type="number" min="0" step="0.01" inputMode="decimal" className="w-full rounded-xl px-3.5 py-2.5 text-sm fp-mono" style={inputStyle} value={form.custo} onChange={set("custo")} />
             </div>
-            <div><FieldLabel>Valor da venda (R$)</FieldLabel>
-              <input type="number" min="0" step="0.01" inputMode="decimal" className="w-full rounded-xl px-3.5 py-2.5 text-sm fp-mono" style={inputStyle} value={form.venda} onChange={set("venda")} />
+          )}
+
+          {produtoSelecionado && (
+            <p className="text-[11px]" style={{ color: COLORS.sub }}>
+              Você pode ajustar os valores manualmente neste pedido, sem
+              alterar o cadastro original do produto.
+            </p>
+          )}
+
+          {!produtoSelecionado && form.produtoNome && !form.produtoId && (
+            <p className="text-[11px]" style={{ color: COLORS.sub }}>
+              Produto histórico: {form.produtoNome}.
+            </p>
+          )}
+
+          {/* CUSTO E VENDA */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Custo do produto (R$)</FieldLabel>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                className="w-full rounded-xl px-3.5 py-2.5 text-sm fp-mono"
+                style={inputStyle}
+                value={form.custo}
+                onChange={set("custo")}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Valor da venda (R$)</FieldLabel>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                className="w-full rounded-xl px-3.5 py-2.5 text-sm fp-mono"
+                style={inputStyle}
+                value={form.venda}
+                onChange={set("venda")}
+              />
             </div>
           </div>
-          <div className="rounded-xl px-3.5 py-2.5 flex items-center justify-between" style={{ background: COLORS.posBg }}>
-            <span className="text-xs font-semibold" style={{ color: COLORS.pos }}>Lucro deste pedido</span>
-            <span className="fp-mono text-sm font-bold" style={{ color: COLORS.pos }}>{fmtBRL(lucro)}</span>
+
+          <div className="rounded-xl px-3.5 py-2.5 flex items-center justify-between"
+            style={{ background: COLORS.posBg }}>
+            <span className="text-xs font-semibold" style={{ color: COLORS.pos }}>
+              Lucro deste pedido
+            </span>
+            <span className="fp-mono text-sm font-bold" style={{ color: COLORS.pos }}>
+              {fmtBRL(lucro)}
+            </span>
           </div>
+
           <div className="grid grid-cols-2 gap-3">
-            <div><FieldLabel>Status</FieldLabel>
-              <select className="w-full rounded-xl px-3 py-2.5 text-sm" style={inputStyle} value={form.status} onChange={set("status")}>
+            <div>
+              <FieldLabel>Status</FieldLabel>
+              <select
+                className="w-full rounded-xl px-3 py-2.5 text-sm"
+                style={inputStyle}
+                value={form.status}
+                onChange={set("status")}
+              >
                 {STATUS_OPTIONS.map((s) => <option key={s}>{s}</option>)}
               </select>
             </div>
-            <div><FieldLabel>Forma de pagamento</FieldLabel>
-              <select className="w-full rounded-xl px-3 py-2.5 text-sm" style={inputStyle} value={form.formaPagamento} onChange={set("formaPagamento")}>
+
+            <div>
+              <FieldLabel>Forma de pagamento</FieldLabel>
+              <select
+                className="w-full rounded-xl px-3 py-2.5 text-sm"
+                style={inputStyle}
+                value={form.formaPagamento}
+                onChange={set("formaPagamento")}
+              >
                 {PAGAMENTO_OPTIONS.map((s) => <option key={s}>{s}</option>)}
               </select>
             </div>
           </div>
+
           {showAfiliadoField && (
             <div>
               <FieldLabel>Afiliado</FieldLabel>
-              <select className="w-full rounded-xl px-3 py-2.5 text-sm" style={inputStyle} value={form.afiliadoId || ""} onChange={set("afiliadoId")}>
+              <select
+                className="w-full rounded-xl px-3 py-2.5 text-sm"
+                style={inputStyle}
+                value={form.afiliadoId || ""}
+                onChange={set("afiliadoId")}
+              >
                 <option value="">Sem afiliado (venda própria)</option>
-                {(afiliados || []).map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                {(afiliados || []).map((a) => (
+                  <option key={a.id} value={a.id}>{a.nome}</option>
+                ))}
               </select>
             </div>
           )}
+
           <div>
             <FieldLabel>Data do pagamento (se pago)</FieldLabel>
-            <input type="date" className="w-full rounded-xl px-3 py-2.5 text-sm" style={inputStyle} value={form.dataPagamento} onChange={set("dataPagamento")} />
+            <input
+              type="date"
+              className="w-full rounded-xl px-3 py-2.5 text-sm"
+              style={inputStyle}
+              value={form.dataPagamento}
+              onChange={set("dataPagamento")}
+            />
           </div>
+
           {error && (
-            <p className="text-xs font-semibold px-3 py-2 rounded-lg" style={{ color: COLORS.neg, background: COLORS.negBg }}>{error}</p>
+            <p className="text-xs font-semibold px-3 py-2 rounded-lg"
+              style={{ color: COLORS.neg, background: COLORS.negBg }}>
+              {error}
+            </p>
           )}
+
           <div className="flex gap-3 pt-1">
-            <button onClick={onCancel} disabled={saving} className="flex-1 rounded-xl py-3 text-sm font-semibold" style={{ border: `1.5px solid ${COLORS.line}`, color: COLORS.ink }}>Cancelar</button>
-            <button onClick={handleSave} disabled={saving} className="flex-1 rounded-xl py-3 text-sm font-semibold text-white" style={{ background: COLORS.brand, opacity: saving ? 0.7 : 1 }}>
+            <button
+              onClick={onCancel}
+              disabled={saving}
+              className="flex-1 rounded-xl py-3 text-sm font-semibold"
+              style={{ border: `1.5px solid ${COLORS.line}`, color: COLORS.ink }}
+            >
+              Cancelar
+            </button>
+
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 rounded-xl py-3 text-sm font-semibold text-white"
+              style={{ background: COLORS.brand, opacity: saving ? 0.7 : 1 }}
+            >
               {saving ? "Salvando..." : "Salvar pedido"}
             </button>
           </div>
+
         </div>
       </div>
     </div>
