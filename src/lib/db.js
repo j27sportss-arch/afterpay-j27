@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -138,6 +137,7 @@ const rowToPedido = (r) => ({
   afiliadoId: r.afiliado_id,
   produtoId: r.produto_id || null,
   produtoNome: r.produto_nome || null,
+  produtoVariacao: r.produto_variacao || "",
   criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : Date.now(),
 });
 
@@ -156,6 +156,7 @@ const pedidoToRow = (p, empresaId) => {
   if (p.produtoId || p.produtoNome) {
     row.produto_id = p.produtoId || null;
     row.produto_nome = p.produtoNome || null;
+    row.produto_variacao = p.produtoVariacao || null;
   }
   if (empresaId) row.empresa_id = empresaId;
   if (p.id) row.id = p.id;
@@ -198,6 +199,9 @@ export async function updatePedido(id, patch) {
   if (patch.produtoAlterado || patch.produtoId || patch.produtoNome) {
     row.produto_id = patch.produtoId || null;
     row.produto_nome = patch.produtoNome || null;
+    if ("produtoVariacao" in patch) {
+  row.produto_variacao = patch.produtoVariacao || null;
+}
   }
 
   const { data, error } = await supabase.from("pedidos").update(row).eq("id", id).select().single();
@@ -215,6 +219,7 @@ const rowToProduto = (r) => ({
   sku: r.sku || "",
   custo: Number(r.custo) || 0,
   precoVenda: Number(r.preco_venda) || 0,
+  variacoes: Array.isArray(r.variacoes) ? r.variacoes : [],
   ativo: Boolean(r.ativo),
   criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : Date.now(),
   atualizadoEm: r.atualizado_em ? new Date(r.atualizado_em).getTime() : null,
@@ -226,6 +231,7 @@ const produtoToRow = (p) => ({
   sku: p.sku ? String(p.sku).trim() : null,
   custo: Number(p.custo) || 0,
   preco_venda: Number(p.precoVenda) || 0,
+  variacoes: Array.isArray(p.variacoes) ? p.variacoes : [],
   ativo: p.ativo !== false,
 });
 
@@ -257,6 +263,9 @@ export async function updateProduto(id, patch) {
   if ("sku" in patch) row.sku = patch.sku ? String(patch.sku).trim() : null;
   if ("custo" in patch) row.custo = Number(patch.custo) || 0;
   if ("precoVenda" in patch) row.preco_venda = Number(patch.precoVenda) || 0;
+  if ("variacoes" in patch) {
+  row.variacoes = Array.isArray(patch.variacoes) ? patch.variacoes : [];
+}
   if ("ativo" in patch) row.ativo = Boolean(patch.ativo);
 
   const { data, error } = await supabase
