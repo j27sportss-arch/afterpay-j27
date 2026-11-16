@@ -1059,108 +1059,321 @@ function DespesaWidget({ despesas, onSave }) {
 /* ---------------------------------------------------------------- */
 /* Cadastro e catálogo de produtos                                    */
 /* ---------------------------------------------------------------- */
+
 function ProdutoFormModal({ initial, onCancel, onSave }) {
-  const [form, setForm] = useState(initial || {
-    nome: "", imagemUrl: "", sku: "", custo: "", precoVenda: "", ativo: true,
-  });
+  const [form, setForm] = useState(() => ({
+    nome: initial?.nome || "",
+    imagemUrl: initial?.imagemUrl || "",
+    sku: initial?.sku || "",
+    ativo: initial?.ativo !== false,
+    variacoes: Array.isArray(initial?.variacoes) && initial.variacoes.length
+      ? initial.variacoes.map(v => ({
+          nome: v.nome || "",
+          custo: String(v.custo ?? ""),
+          precoVenda: String(v.precoVenda ?? ""),
+        }))
+      : [{
+          nome: initial ? "Padrão" : "1 unidade",
+          custo: initial ? String(initial.custo ?? "") : "",
+          precoVenda: initial ? String(initial.precoVenda ?? "") : "",
+        }],
+  }));
+
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const custo = Number(form.custo) || 0;
-  const precoVenda = Number(form.precoVenda) || 0;
-  const lucroUnitario = precoVenda - custo;
-  const margem = precoVenda > 0 ? (lucroUnitario / precoVenda) * 100 : 0;
-  const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
+
+  const atualizarVariacao = (index, campo, valor) => {
+    setForm(current => ({
+      ...current,
+      variacoes: current.variacoes.map((v, i) =>
+        i === index ? { ...v, [campo]: valor } : v
+      ),
+    }));
+  };
+
+  const adicionarVariacao = () => {
+    setForm(current => ({
+      ...current,
+      variacoes: [
+        ...current.variacoes,
+        { nome: "", custo: "", precoVenda: "" },
+      ],
+    }));
+  };
+
+  const removerVariacao = (index) => {
+    if (form.variacoes.length <= 1) return;
+
+    setForm(current => ({
+      ...current,
+      variacoes: current.variacoes.filter((_, i) => i !== index),
+    }));
+  };
 
   const handleSave = async () => {
     setError("");
-    if (!form.nome.trim()) return setError("Informe o nome do produto.");
-    if (!Number.isFinite(custo) || custo < 0) return setError("Informe um custo válido.");
-    if (!Number.isFinite(precoVenda) || precoVenda <= 0) return setError("O preço de venda precisa ser maior que zero.");
+
+    if (!form.nome.trim()) {
+      return setError("Informe o nome do produto.");
+    }
+
+    if (!form.variacoes.length) {
+      return setError("Cadastre pelo menos uma variação.");
+    }
+
+    for (let i = 0; i < form.variacoes.length; i++) {
+      const v = form.variacoes[i];
+
+      if (!v.nome.trim()) {
+        return setError(`Informe o nome da variação ${i + 1}.`);
+      }
+
+      if (v.custo === "" || !Number.isFinite(Number(v.custo)) || Number(v.custo) < 0) {
+        return setError(`Informe um custo válido na variação ${i + 1}.`);
+      }
+
+      if (v.precoVenda === "" || !Number.isFinite(Number(v.precoVenda)) || Number(v.precoVenda) <= 0) {
+        return setError(`Informe um preço de venda válido na variação ${i + 1}.`);
+      }
+    }
+
     if (form.imagemUrl.trim()) {
       try {
         const url = new URL(form.imagemUrl.trim());
         if (url.protocol !== "https:") throw new Error("URL inválida");
       } catch {
-        return setError("Informe um endereço de imagem válido (https://...).");
+        return setError("Informe uma imagem válida com https://.");
       }
     }
 
+    const variacoes = form.variacoes.map(v => ({
+      nome: v.nome.trim(),
+      custo: Number(v.custo),
+      precoVenda: Number(v.precoVenda),
+    }));
+
     setSaving(true);
+
     try {
       await onSave({
         ...form,
         nome: form.nome.trim(),
         imagemUrl: form.imagemUrl.trim(),
         sku: form.sku.trim(),
-        custo,
-        precoVenda,
+        variacoes,
+        custo: variacoes[0].custo,
+        precoVenda: variacoes[0].precoVenda,
       });
-    } catch (saveError) {
-      setError(saveError?.message || "Não foi possível salvar o produto.");
+    } catch (e) {
+      setError(e?.message || "Não foi possível salvar o produto.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ background: "rgba(9,17,40,.62)", backdropFilter: "blur(5px)" }}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: "rgba(9,17,40,.62)", backdropFilter: "blur(5px)" }}>
       <div className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto fp-scrollbar shadow-2xl">
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 sticky top-0 bg-white z-10" style={{ borderBottom: `1px solid ${COLORS.line}` }}>
+
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 sticky top-0 bg-white z-10"
+          style={{ borderBottom: `1px solid ${COLORS.line}` }}>
           <div>
             <p className="page-eyebrow">Catálogo da operação</p>
-            <h3 className="text-lg font-extrabold mt-1">{initial ? "Editar produto" : "Novo produto"}</h3>
+            <h3 className="text-lg font-extrabold mt-1">
+              {initial ? "Editar produto" : "Novo produto"}
+            </h3>
           </div>
-          <button onClick={onCancel} className="p-2 rounded-xl hover:bg-slate-100" aria-label="Fechar"><X size={19} /></button>
+          <button onClick={onCancel} className="p-2 rounded-xl hover:bg-slate-100">
+            <X size={19} />
+          </button>
         </div>
+
         <div className="p-6 space-y-4">
+
           <div>
             <FieldLabel>Nome do produto *</FieldLabel>
-            <input autoFocus className="w-full rounded-xl px-3.5 py-3 text-sm" style={inputStyle} placeholder="Ex.: Regata Sauna Modeladora" value={form.nome} onChange={set("nome")} />
+            <input
+              className="w-full rounded-xl px-3.5 py-3 text-sm"
+              style={inputStyle}
+              placeholder="Ex.: Regata Efeito Sauna"
+              value={form.nome}
+              onChange={e => setForm(current => ({
+                ...current,
+                nome: e.target.value,
+              }))}
+            />
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <FieldLabel>SKU (opcional)</FieldLabel>
-              <input className="w-full rounded-xl px-3.5 py-3 text-sm" style={inputStyle} placeholder="Ex.: REG-001" value={form.sku} onChange={set("sku")} />
+              <input
+                className="w-full rounded-xl px-3.5 py-3 text-sm"
+                style={inputStyle}
+                value={form.sku}
+                onChange={e => setForm(current => ({
+                  ...current,
+                  sku: e.target.value,
+                }))}
+              />
             </div>
+
             <div>
               <FieldLabel>Imagem por URL (opcional)</FieldLabel>
-              <input type="url" className="w-full rounded-xl px-3.5 py-3 text-sm" style={inputStyle} placeholder="https://..." value={form.imagemUrl} onChange={set("imagemUrl")} />
+              <input
+                type="url"
+                className="w-full rounded-xl px-3.5 py-3 text-sm"
+                style={inputStyle}
+                placeholder="https://..."
+                value={form.imagemUrl}
+                onChange={e => setForm(current => ({
+                  ...current,
+                  imagemUrl: e.target.value,
+                }))}
+              />
             </div>
           </div>
-          {form.imagemUrl.trim() && (
-            <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: "#F5F7FB", border: `1px solid ${COLORS.line}` }}>
-              <div className="product-image"><img src={form.imagemUrl} alt="Prévia do produto" onError={(event) => { event.currentTarget.style.display = "none"; }} /></div>
-              <p className="text-xs" style={{ color: COLORS.sub }}>Prévia da imagem do produto</p>
+
+          {/* VARIAÇÕES */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h4 className="font-extrabold text-sm">Variações do produto</h4>
+                <p className="text-xs mt-1" style={{ color: COLORS.sub }}>
+                  Cada opção terá seu próprio custo e preço.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={adicionarVariacao}
+                className="primary-button !px-3 !py-2"
+              >
+                <Plus size={14} />
+                Adicionar
+              </button>
             </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <FieldLabel>Custo de aquisição (R$) *</FieldLabel>
-              <input type="number" min="0" step="0.01" inputMode="decimal" className="w-full rounded-xl px-3.5 py-3 text-sm fp-mono" style={inputStyle} placeholder="0,00" value={form.custo} onChange={set("custo")} />
-            </div>
-            <div>
-              <FieldLabel>Preço de venda (R$) *</FieldLabel>
-              <input type="number" min="0.01" step="0.01" inputMode="decimal" className="w-full rounded-xl px-3.5 py-3 text-sm fp-mono" style={inputStyle} placeholder="0,00" value={form.precoVenda} onChange={set("precoVenda")} />
-            </div>
+
+            {form.variacoes.map((v, index) => {
+              const custo = Number(v.custo) || 0;
+              const venda = Number(v.precoVenda) || 0;
+              const lucro = venda - custo;
+
+              return (
+                <div key={index}
+                  className="rounded-xl p-4 space-y-3"
+                  style={{ background: "#F5F7FB", border: `1px solid ${COLORS.line}` }}>
+
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-sm">
+                      Variação {index + 1}
+                    </p>
+
+                    {form.variacoes.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removerVariacao(index)}
+                        className="text-xs font-bold"
+                        style={{ color: COLORS.neg }}
+                      >
+                        Remover
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <FieldLabel>Nome da variação *</FieldLabel>
+                    <input
+                      className="w-full rounded-xl px-3 py-2.5 text-sm"
+                      style={inputStyle}
+                      placeholder="Ex.: Kit com 2 unidades"
+                      value={v.nome}
+                      onChange={e => atualizarVariacao(index, "nome", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <FieldLabel>Custo (R$) *</FieldLabel>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="w-full rounded-xl px-3 py-2.5 text-sm fp-mono"
+                        style={inputStyle}
+                        placeholder="0,00"
+                        value={v.custo}
+                        onChange={e => atualizarVariacao(index, "custo", e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel>Preço de venda (R$) *</FieldLabel>
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        className="w-full rounded-xl px-3 py-2.5 text-sm fp-mono"
+                        style={inputStyle}
+                        placeholder="0,00"
+                        value={v.precoVenda}
+                        onChange={e => atualizarVariacao(index, "precoVenda", e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center rounded-lg px-3 py-2"
+                    style={{ background: "#E9F7EF" }}>
+                    <span className="text-xs font-bold" style={{ color: COLORS.pos }}>
+                      Lucro desta variação
+                    </span>
+                    <span className="text-sm font-extrabold fp-mono"
+                      style={{ color: lucro >= 0 ? COLORS.pos : COLORS.neg }}>
+                      {fmtBRL(lucro)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl p-3.5" style={{ background: "#F0F3FF" }}>
-              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#6675B9" }}>Lucro bruto unitário</p>
-              <p className="fp-mono text-lg font-extrabold mt-1" style={{ color: lucroUnitario >= 0 ? COLORS.brand : COLORS.neg }}>{fmtBRL(lucroUnitario)}</p>
-            </div>
-            <div className="rounded-xl p-3.5" style={{ background: "#F2EEFF" }}>
-              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#806BB8" }}>Margem bruta</p>
-              <p className="fp-mono text-lg font-extrabold mt-1" style={{ color: "#7357D8" }}>{margem.toFixed(2).replace(".", ",")}%</p>
-            </div>
-          </div>
-          <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3" style={{ border: `1px solid ${COLORS.line}` }}>
-            <span><span className="block text-sm font-bold">Produto ativo</span><span className="block text-[11px] mt-0.5" style={{ color: COLORS.sub }}>Produtos inativos não aparecem para novos pedidos</span></span>
-            <input type="checkbox" checked={form.ativo !== false} onChange={(event) => setForm((current) => ({ ...current, ativo: event.target.checked }))} className="h-4 w-4 accent-indigo-600" />
+
+          <label className="flex items-center justify-between gap-3 rounded-xl px-4 py-3"
+            style={{ border: `1px solid ${COLORS.line}` }}>
+            <span>
+              <span className="block text-sm font-bold">Produto ativo</span>
+              <span className="block text-[11px] mt-0.5" style={{ color: COLORS.sub }}>
+                Produtos inativos não aparecem em novos pedidos.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={form.ativo !== false}
+              onChange={e => setForm(current => ({
+                ...current,
+                ativo: e.target.checked,
+              }))}
+              className="h-4 w-4 accent-indigo-600"
+            />
           </label>
-          {error && <p className="text-xs font-semibold px-3 py-2.5 rounded-lg" style={{ color: COLORS.neg, background: COLORS.negBg }}>{error}</p>}
+
+          {error && (
+            <p className="text-xs font-semibold px-3 py-2.5 rounded-lg"
+              style={{ color: COLORS.neg, background: COLORS.negBg }}>
+              {error}
+            </p>
+          )}
+
           <div className="flex gap-3 pt-1">
-            <button onClick={onCancel} disabled={saving} className="secondary-button flex-1">Cancelar</button>
-            <button onClick={handleSave} disabled={saving} className="primary-button flex-1">{saving ? "Salvando..." : "Salvar produto"}</button>
+            <button onClick={onCancel} disabled={saving}
+              className="secondary-button flex-1">
+              Cancelar
+            </button>
+
+            <button onClick={handleSave} disabled={saving}
+              className="primary-button flex-1">
+              {saving ? "Salvando..." : "Salvar produto"}
+            </button>
           </div>
         </div>
       </div>
