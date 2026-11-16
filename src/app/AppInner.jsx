@@ -21,7 +21,7 @@ import {
   salvarPushSubscription,
   subscribeAll, subscribeNotificacoes,
 } from "../lib/db.js";
-
+import FornecedoresTab from "./FornecedoresTab";
 /* ---------------------------------------------------------------- */
 /* Estilo global                                                      */
 /* ---------------------------------------------------------------- */
@@ -1634,6 +1634,7 @@ function AdminApp({ profile, onLogout }) {
     { id: "dashboard", label: "Visão geral", mobileLabel: "Início", icon: LayoutDashboard },
     { id: "pedidos", label: "Pedidos", mobileLabel: "Pedidos", icon: ShoppingCart },
     { id: "produtos", label: "Produtos", mobileLabel: "Produtos", icon: Boxes },
+    { id: "fornecedores", label: "Fornecedores", mobileLabel: "Fornec.", icon: Store },
     { id: "afiliados", label: "Afiliados", mobileLabel: "Afiliados", icon: Users },
     { id: "frustrados", label: "Frustrados", mobileLabel: "Frustrados", icon: AlertTriangle },
   ];
@@ -1685,6 +1686,7 @@ function AdminApp({ profile, onLogout }) {
             {tab === "dashboard" && <DashboardTab pedidos={pedidos} afiliados={afiliados} despesas={despesas} onSaveDespesa={handleSaveDespesa} onNovo={() => setModal("new")} />}
             {tab === "pedidos" && <PedidosTab pedidos={pedidos} afiliados={afiliados} showAfiliadoColumn onNovo={() => setModal("new")} onEdit={(pedido) => setModal(pedido)} onDelete={handleDeletePedido} />}
             {tab === "produtos" && <ProdutosTab products={products} onNew={() => setProductModal("new")} onEdit={(product) => setProductModal(product)} onToggle={handleToggleProduto} onDelete={handleDeleteProduto} />}
+            {tab === "fornecedores" && <FornecedoresTab products={products} empresaId={profile.empresa_id} />}
             {tab === "afiliados" && <AfiliadosTab afiliados={afiliados} pedidos={pedidos} onAdd={handleAddAfiliado} onRemove={handleRemoveAfiliado} />}
             {tab === "frustrados" && <FrustradosTab pedidos={pedidos} onEdit={(pedido) => setModal(pedido)} onDelete={handleDeletePedido} />}
           </div>
