@@ -702,7 +702,7 @@ function NotificationBell({ empresaId }) {
 function PedidoFormModal({ title, initial, afiliados, products = [], showAfiliadoField, onCancel, onSave }) {
   const [form, setForm] = useState(
     initial || {
-      cliente: "", dataPedido: todayISO(), previsaoEntrega: todayISO(),
+ cliente: "", endereco: "", dataPedido: todayISO(), previsaoEntrega: todayISO(),
       custo: "", venda: "", status: "Em Rota", formaPagamento: "PIX",
       dataPagamento: "", afiliadoId: "", produtoId: "", produtoNome: "",
       produtoVariacao: "", produtoAlterado: false,
@@ -841,6 +841,18 @@ function PedidoFormModal({ title, initial, afiliados, products = [], showAfiliad
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            
+          <div>
+            <FieldLabel>Endereço de entrega</FieldLabel>
+            <textarea
+              className="w-full rounded-xl px-3.5 py-2.5 text-sm"
+              style={inputStyle}
+              placeholder="Rua, número, bairro, cidade e CEP..."
+              rows={3}
+              value={form.endereco || ""}
+              onChange={set("endereco")}
+            />
+          </div>
             <div>
               <FieldLabel>Data do pedido</FieldLabel>
               <input
@@ -1761,7 +1773,17 @@ function PedidosTab({ pedidos, afiliados, showAfiliadoColumn, onNovo, onEdit, on
                     const lucro = (Number(pedido.venda) || 0) - (Number(pedido.custo) || 0);
                     return (
                       <tr key={pedido.id} className="hover:bg-slate-50" style={{ borderBottom: `1px solid ${COLORS.line}` }}>
-                        <td className="px-4 py-3"><p className="text-xs font-bold">{pedido.cliente}</p><p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>{pedido.produtoNome || "Pedido manual"}</p></td>
+                      <td className="px-4 py-3">
+  <p className="text-xs font-bold">{pedido.cliente}</p>
+  <p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>
+    {pedido.produtoNome || "Pedido manual"}
+  </p>
+  {pedido.endereco && (
+    <p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>
+      {pedido.endereco}
+    </p>
+  )}
+</td>
                         <td className="px-4 py-3"><p className="text-xs font-semibold">{fmtDate(pedido.dataPedido)}</p><p className="text-[10px] mt-1" style={{ color: COLORS.sub }}>Prev.: {fmtDate(pedido.previsaoEntrega)}</p></td>
                         {showAfiliadoColumn && <td className="px-4 py-3 text-xs" style={{ color: COLORS.sub }}>{affName(pedido.afiliadoId) || "—"}</td>}
                         <td className="px-4 py-3"><StatusBadge status={pedido.status} /></td>
@@ -1786,6 +1808,11 @@ function PedidosTab({ pedidos, afiliados, showAfiliadoColumn, onNovo, onEdit, on
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <p className="font-bold text-sm">{p.cliente}</p>
+                      {p.endereco && (
+  <p className="text-[11px] mt-1" style={{ color: COLORS.sub }}>
+    {p.endereco}
+  </p>
+)}
                       {affiliate && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md inline-block mt-1" style={{ background: "#EEF1FF", color: COLORS.brand }}>via {affiliate}</span>}
                       {p.produtoNome && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md inline-block mt-1 ml-1" style={{ background: "#F0F2F7", color: COLORS.sub }}>{p.produtoNome}</span>}
                     </div>
