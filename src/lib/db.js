@@ -127,6 +127,7 @@ export async function fetchEmpresasPublicList() {
 const rowToPedido = (r) => ({
   id: r.id,
   cliente: r.cliente,
+  endereco: r.endereco || "",
   dataPedido: r.data_pedido,
   previsaoEntrega: r.previsao_entrega,
   custo: Number(r.custo) || 0,
@@ -144,6 +145,7 @@ const rowToPedido = (r) => ({
 const pedidoToRow = (p, empresaId) => {
   const row = {
     cliente: p.cliente,
+    endereco: p.endereco || null,
     data_pedido: p.dataPedido,
     previsao_entrega: p.previsaoEntrega || null,
     custo: Number(p.custo) || 0,
@@ -188,6 +190,7 @@ export async function createPedido(p, empresaId) {
 export async function updatePedido(id, patch) {
   const row = {};
   if ("cliente" in patch) row.cliente = patch.cliente;
+  if ("endereco" in patch) row.endereco = patch.endereco || null;
   if ("dataPedido" in patch) row.data_pedido = patch.dataPedido;
   if ("previsaoEntrega" in patch) row.previsao_entrega = patch.previsaoEntrega || null;
   if ("custo" in patch) row.custo = Number(patch.custo) || 0;
