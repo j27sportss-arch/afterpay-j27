@@ -49,7 +49,7 @@ FROM public.produtos AS modelo
 WHERE modelo.empresa_id =
   53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
 AND copia.empresa_id NOT IN (
-  '53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441'
+'53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441',
   'cc637980-7ab5-48b0-9296-585be8197db1'
 )
 AND lower(btrim(copia.nome)) = lower(btrim(modelo.nome))
@@ -85,7 +85,7 @@ AND copia.empresa_id = produto_copia.empresa_id
 AND copia.url = modelo.url
 AND copia.catalogo_origem_id IS NULL
 AND copia.empresa_id NOT IN (
- '53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441'
+ '53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441',
   'cc637980-7ab5-48b0-9296-585be8197db1'
 );
 
@@ -158,7 +158,7 @@ BEGIN
     NEW.id
   FROM public.empresas e
   WHERE e.id NOT IN (
-'53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441'
+'53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441',
     'cc637980-7ab5-48b0-9296-585be8197db1'
   )
   ON CONFLICT DO NOTHING;
@@ -248,7 +248,7 @@ BEGIN
     ON destino.empresa_id = e.id
    AND destino.catalogo_origem_id = NEW.produto_id
   WHERE e.id NOT IN (
-'53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441'
+'53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441',
     'cc637980-7ab5-48b0-9296-585be8197db1'
   )
   AND NOT EXISTS (
