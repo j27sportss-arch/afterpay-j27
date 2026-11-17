@@ -59,7 +59,7 @@ AND copia.catalogo_origem_id IS NULL;
 UPDATE public.produtos
 SET catalogo_origem_id = id
 WHERE empresa_id =
-  '53546e28-8762-4b94-9dd1-b35c3bbf0711'
+ 53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
 AND catalogo_origem_id IS NULL
 AND nome IN ('REGATA SAUNA', 'RESINA BOX 21');
 
