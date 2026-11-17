@@ -47,9 +47,9 @@ UPDATE public.produtos AS copia
 SET catalogo_origem_id = modelo.id
 FROM public.produtos AS modelo
 WHERE modelo.empresa_id =
-  
+  53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
 AND copia.empresa_id NOT IN (
-  
+  53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
   'cc637980-7ab5-48b0-9296-585be8197db1'
 )
 AND lower(btrim(copia.nome)) = lower(btrim(modelo.nome))
@@ -80,12 +80,12 @@ JOIN public.produtos AS produto_modelo
 JOIN public.produtos AS produto_copia
   ON produto_copia.catalogo_origem_id = produto_modelo.id
 WHERE modelo.empresa_id =
-
+53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
 AND copia.empresa_id = produto_copia.empresa_id
 AND copia.url = modelo.url
 AND copia.catalogo_origem_id IS NULL
 AND copia.empresa_id NOT IN (
-  
+  53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
   'cc637980-7ab5-48b0-9296-585be8197db1'
 );
 
@@ -99,7 +99,7 @@ SET search_path = public
 AS $fn$
 BEGIN
   IF NEW.empresa_id =
-
+53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
     AND NEW.compartilhar_todas = true
   THEN
     NEW.catalogo_origem_id := NEW.id;
@@ -127,7 +127,7 @@ SET search_path = public
 AS $fn$
 BEGIN
   IF NEW.empresa_id <>
-   
+   53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
     OR NEW.compartilhar_todas IS NOT TRUE
   THEN
     RETURN NEW;
@@ -158,7 +158,7 @@ BEGIN
     NEW.id
   FROM public.empresas e
   WHERE e.id NOT IN (
-  
+  53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
     'cc637980-7ab5-48b0-9296-585be8197db1'
   )
   ON CONFLICT DO NOTHING;
@@ -185,7 +185,7 @@ SET search_path = public
 AS $fn$
 BEGIN
   IF NEW.empresa_id =
-    
+    53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
     AND EXISTS (
       SELECT 1
       FROM public.produtos p
@@ -218,7 +218,7 @@ SET search_path = public
 AS $fn$
 BEGIN
   IF NEW.empresa_id <>
-
+53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
     OR NEW.catalogo_origem_id IS DISTINCT FROM NEW.id
   THEN
     RETURN NEW;
@@ -248,7 +248,7 @@ BEGIN
     ON destino.empresa_id = e.id
    AND destino.catalogo_origem_id = NEW.produto_id
   WHERE e.id NOT IN (
-   
+   53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
     'cc637980-7ab5-48b0-9296-585be8197db1'
   )
   AND NOT EXISTS (
@@ -281,7 +281,7 @@ SET
   compartilhar_todas = true,
   catalogo_origem_id = id
 WHERE empresa_id =
-
+53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
 AND nome IN ('REGATA SAUNA', 'RESINA BOX 21');
 
 -- 10. PUBLICAR OS FORNECEDORES JA CADASTRADOS
@@ -289,7 +289,7 @@ AND nome IN ('REGATA SAUNA', 'RESINA BOX 21');
 UPDATE public.fornecedores f
 SET catalogo_origem_id = f.id
 WHERE f.empresa_id =
-
+53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
 AND EXISTS (
   SELECT 1
   FROM public.produtos p
@@ -368,7 +368,7 @@ BEGIN
     p.id
   FROM public.produtos p
   WHERE p.empresa_id =
-   
+   53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
   AND p.compartilhar_todas = true
   ON CONFLICT DO NOTHING;
 
@@ -401,7 +401,7 @@ BEGIN
     ON destino.empresa_id = nova_empresa_id
    AND destino.catalogo_origem_id = origem.id
   WHERE f.empresa_id =
-    
+    53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
   AND origem.compartilhar_todas = true
   AND f.catalogo_origem_id = f.id
   ON CONFLICT DO NOTHING;
