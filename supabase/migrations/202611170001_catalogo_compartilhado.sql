@@ -47,7 +47,7 @@ UPDATE public.produtos AS copia
 SET catalogo_origem_id = modelo.id
 FROM public.produtos AS modelo
 WHERE modelo.empresa_id =
-  53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441
+ '53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441'
 AND copia.empresa_id NOT IN (
 '53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441',
   'cc637980-7ab5-48b0-9296-585be8197db1'
