@@ -1296,12 +1296,13 @@ function DespesaWidget({ despesas, onSave }) {
 /* Cadastro e catálogo de produtos                                    */
 /* ---------------------------------------------------------------- */
 
-function ProdutoFormModal({ initial, onCancel, onSave }) {
+function ProdutoFormModal({ initial, onCancel, onSave, canShareCatalog = false }) {
   const [form, setForm] = useState(() => ({
     nome: initial?.nome || "",
     imagemUrl: initial?.imagemUrl || "",
     sku: initial?.sku || "",
     ativo: initial?.ativo !== false,
+    compartilharTodas: initial?.compartilharTodas === true,
     variacoes: Array.isArray(initial?.variacoes) && initial.variacoes.length
       ? initial.variacoes.map(v => ({
           nome: v.nome || "",
@@ -1592,7 +1593,34 @@ function ProdutoFormModal({ initial, onCancel, onSave }) {
               className="h-4 w-4 accent-indigo-600"
             />
           </label>
+{canShareCatalog && (
+  <label
+    className="flex items-center justify-between gap-3 rounded-xl px-4 py-3"
+    style={{ border: `1px solid ${COLORS.line}` }}
+  >
+    <span>
+      <span className="block text-sm font-bold">
+        Compartilhar com todas as empresas
+      </span>
+      <span className="block text-[11px] mt-0.5" style={{ color: COLORS.sub }}>
+        Publica este produto para as outras operações.
+        Desativar não apaga cópias já recebidas.
+      </span>
+    </span>
 
+    <input
+      type="checkbox"
+      checked={form.compartilharTodas === true}
+      onChange={e =>
+        setForm(current => ({
+          ...current,
+          compartilharTodas: e.target.checked,
+        }))
+      }
+      className="h-4 w-4 accent-indigo-600"
+    />
+  </label>
+)}
           {error && (
             <p className="text-xs font-semibold px-3 py-2.5 rounded-lg"
               style={{ color: COLORS.neg, background: COLORS.negBg }}>
@@ -2176,7 +2204,14 @@ function AdminApp({ profile, onLogout }) {
           onSave={handleSavePedido}
         />
       )}
-      {productModal && <ProdutoFormModal initial={productModal === "new" ? null : productModal} onCancel={() => setProductModal(null)} onSave={handleSaveProduto} />}
+      {productModal && (
+  <ProdutoFormModal
+    initial={productModal === "new" ? null : productModal}
+    onCancel={() => setProductModal(null)}
+    onSave={handleSaveProduto}
+    canShareCatalog={profile.empresa_id === "53546fbb-2b6a-4dfa-8ff5-0b67dfcfd441"}
+  />
+)}
     </div>
   );
 }
