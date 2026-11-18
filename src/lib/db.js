@@ -224,6 +224,8 @@ const rowToProduto = (r) => ({
   precoVenda: Number(r.preco_venda) || 0,
   variacoes: Array.isArray(r.variacoes) ? r.variacoes : [],
   ativo: Boolean(r.ativo),
+  compartilharTodas: r.compartilhar_todas === true,
+catalogoOrigemId: r.catalogo_origem_id || null,
   criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : Date.now(),
   atualizadoEm: r.atualizado_em ? new Date(r.atualizado_em).getTime() : null,
 });
@@ -236,6 +238,7 @@ const produtoToRow = (p) => ({
   preco_venda: Number(p.precoVenda) || 0,
   variacoes: Array.isArray(p.variacoes) ? p.variacoes : [],
   ativo: p.ativo !== false,
+  compartilhar_todas: p.compartilharTodas === true,
 });
 
 export async function fetchProdutos() {
@@ -270,7 +273,9 @@ export async function updateProduto(id, patch) {
   row.variacoes = Array.isArray(patch.variacoes) ? patch.variacoes : [];
 }
   if ("ativo" in patch) row.ativo = Boolean(patch.ativo);
-
+if ("compartilharTodas" in patch) {
+  row.compartilhar_todas = Boolean(patch.compartilharTodas);
+}
   const { data, error } = await supabase
     .from("produtos")
     .update(row)
